@@ -1,0 +1,1123 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>~/tasks/index.todo</title>
+  <meta name="description" content="A terminal-style todo app for managing your tasks efficiently." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #0a0c10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      padding: 2rem;
+    }
+
+    .window {
+      width: 100%;
+      max-width: 680px;
+      background: #111318;
+      border-radius: 14px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 32px 80px rgba(0,0,0,0.7),
+        0 8px 24px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+
+    /* ── Title bar ── */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: #161920;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      user-select: none;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+    .dot:hover { filter: brightness(1.25); }
+    .dot.red    { background: #ff5f57; }
+    .dot.yellow { background: #febc2e; }
+    .dot.green  { background: #28c840; }
+
+    .titlebar-title {
+      font-size: 12px;
+      color: #555c6e;
+      letter-spacing: 0.02em;
+    }
+
+    .titlebar-spacer { width: 55px; }
+
+    /* ── Auth user chip ── */
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #555c6e;
+    }
+    .user-chip .username { color: #4ec9b0; }
+    .btn-logout {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 5px;
+      padding: 3px 9px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #555c6e;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-logout:hover { color: #ff5f57; border-color: rgba(255,95,87,0.35); }
+
+    /* ── Main body ── */
+    .body {
+      padding: 28px 28px 24px;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 13px;
+      color: #4ec9b0;
+      margin-bottom: 12px;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Inputs ── */
+    .input-field {
+      width: 100%;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: #c9d1d9;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      caret-color: #4ec9b0;
+    }
+    .input-field::placeholder { color: #404855; }
+    .input-field:focus {
+      border-color: rgba(78, 201, 176, 0.35);
+      box-shadow: 0 0 0 3px rgba(78, 201, 176, 0.08);
+    }
+
+    /* ── Add task row ── */
+    .add-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .add-row .input-field {
+      flex: 1;
+    }
+
+    .btn-add {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      color: #c9d1d9;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-add:hover {
+      background: #242a35;
+      border-color: rgba(255,255,255,0.18);
+    }
+    .btn-add .checkbox-icon {
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid #555c6e;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.05);
+      margin: 24px 0;
+    }
+
+    /* ── Task list ── */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 14px 16px;
+      transition: border-color 0.2s, background 0.2s;
+      animation: slideIn 0.25s ease;
+    }
+    .task-item:hover {
+      background: #1a2030;
+      border-color: rgba(255,255,255,0.09);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* circle toggle */
+    .task-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid #3a4150;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .task-circle:hover { border-color: #28c840; }
+
+    .task-item.done .task-circle {
+      background: #1a4d2a;
+      border-color: #28c840;
+    }
+    .task-item.done .task-circle::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #28c840;
+      display: block;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 14px;
+      color: #c9d1d9;
+      letter-spacing: 0.01em;
+    }
+    .task-item.done .task-text {
+      color: #555c6e;
+      text-decoration: line-through;
+      text-decoration-color: #404855;
+    }
+
+    /* badge */
+    .badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      border: 1.5px solid;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .badge.done  { color: #28c840; border-color: #28c840; }
+    .badge.todo  { color: #4d9fec; border-color: #4d9fec; }
+
+    /* delete button */
+    .btn-delete {
+      width: 34px;
+      height: 34px;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-delete:hover {
+      background: #2d1a1a;
+      border-color: rgba(255, 80, 80, 0.35);
+    }
+    .btn-delete .cb-icon {
+      width: 11px;
+      height: 11px;
+      border: 1.5px solid #555c6e;
+      border-radius: 2px;
+      transition: border-color 0.2s;
+    }
+    .btn-delete:hover .cb-icon { border-color: #ff5f57; }
+
+    /* empty state */
+    .empty-state {
+      text-align: center;
+      padding: 28px 0 10px;
+      color: #3a4150;
+      font-size: 13px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stats-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 28px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .stat-num {
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .stat-num.green  { color: #28c840; }
+    .stat-num.blue   { color: #4d9fec; }
+
+    .stat-label {
+      font-size: 11px;
+      color: #555c6e;
+      letter-spacing: 0.04em;
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-left: auto;
+    }
+
+    .stats-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-left: auto;
+    }
+
+    .pct-label {
+      font-size: 12px;
+      color: #555c6e;
+      white-space: nowrap;
+    }
+
+    .progress-bar-track {
+      width: 180px;
+      height: 5px;
+      background: #1c2028;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #28c840;
+      border-radius: 99px;
+      transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 0 8px rgba(40, 200, 64, 0.5);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 520px) {
+      .body { padding: 20px 16px 18px; }
+      .progress-bar-track { width: 100px; }
+    }
+
+    /* ══ Community Panel ══════════════════════════════════════════════════ */
+    .community-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .community-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .community-panel {
+      position: fixed;
+      top: 0; right: 0;
+      width: 360px;
+      max-width: 94vw;
+      height: 100vh;
+      background: #111318;
+      border-left: 1px solid rgba(255,255,255,0.07);
+      box-shadow: -24px 0 60px rgba(0,0,0,0.6);
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .community-panel.open {
+      transform: translateX(0);
+    }
+
+    .cp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .cp-header h2 {
+      font-size: 13px;
+      color: #4ec9b0;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .cp-close {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 5px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: #555c6e;
+      font-size: 16px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .cp-close:hover { color: #ff5f57; border-color: rgba(255,95,87,0.35); }
+
+    .cp-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .btn-create-community {
+      width: 100%;
+      padding: 13px 18px;
+      background: #1a2d1e;
+      border: 1.5px solid #28c840;
+      border-radius: 8px;
+      color: #28c840;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.2s, box-shadow 0.2s;
+      text-align: left;
+    }
+    .btn-create-community:hover {
+      background: #1f3624;
+      box-shadow: 0 0 0 3px rgba(40,200,64,0.12);
+    }
+
+    .cp-communities-label {
+      font-size: 11px;
+      color: #555c6e;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 22px 0 10px;
+    }
+
+    .cp-community-card {
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      animation: slideIn 0.2s ease;
+    }
+    .cp-community-card-name {
+      font-size: 13px;
+      color: #c9d1d9;
+      margin-bottom: 6px;
+    }
+    .cp-community-card-meta {
+      font-size: 11px;
+      color: #555c6e;
+      margin-bottom: 10px;
+    }
+    .btn-invite-member {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 5px;
+      padding: 5px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #4ec9b0;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-invite-member:hover {
+      background: rgba(78,201,176,0.08);
+      border-color: rgba(78,201,176,0.3);
+    }
+
+    .cp-empty {
+      text-align: center;
+      color: #3a4150;
+      font-size: 12px;
+      padding: 24px 0;
+    }
+
+    /* ── Modals ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal-box {
+      background: #161920;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 28px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+      transform: scale(0.94) translateY(12px);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-backdrop.open .modal-box {
+      transform: scale(1) translateY(0);
+    }
+    .modal-title {
+      font-size: 14px;
+      color: #4ec9b0;
+      margin-bottom: 20px;
+      letter-spacing: 0.02em;
+    }
+    .modal-label {
+      font-size: 11px;
+      color: #555c6e;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .modal-input {
+      width: 100%;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 7px;
+      padding: 12px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #c9d1d9;
+      outline: none;
+      margin-bottom: 16px;
+      caret-color: #4ec9b0;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus { border-color: rgba(78,201,176,0.35); }
+    .modal-input::placeholder { color: #404855; }
+
+    .email-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 7px;
+      padding: 8px;
+      min-height: 44px;
+      margin-bottom: 16px;
+      cursor: text;
+      transition: border-color 0.2s;
+    }
+    .email-tags:focus-within { border-color: rgba(78,201,176,0.35); }
+    .email-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a3040;
+      border: 1px solid rgba(78,201,176,0.25);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #4ec9b0;
+    }
+    .email-tag-remove {
+      cursor: pointer;
+      color: #555c6e;
+      font-size: 13px;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    .email-tag-remove:hover { color: #ff5f57; }
+    .email-tags-input {
+      flex: 1;
+      min-width: 120px;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #c9d1d9;
+      caret-color: #4ec9b0;
+    }
+    .email-tags-input::placeholder { color: #404855; }
+
+    .modal-hint {
+      font-size: 11px;
+      color: #3a4150;
+      margin-bottom: 20px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-modal-cancel {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 7px;
+      padding: 10px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #555c6e;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-modal-cancel:hover { color: #c9d1d9; border-color: rgba(255,255,255,0.18); }
+    .btn-modal-ok {
+      background: #1a4d2a;
+      border: 1.5px solid #28c840;
+      border-radius: 7px;
+      padding: 10px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #28c840;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.04em;
+    }
+    .btn-modal-ok:hover {
+      background: #1f5c32;
+      box-shadow: 0 0 0 3px rgba(40,200,64,0.15);
+    }
+    .btn-modal-ok:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .modal-msg {
+      font-size: 12px;
+      margin-top: 12px;
+      min-height: 18px;
+      letter-spacing: 0.02em;
+    }
+    .modal-msg.ok  { color: #28c840; }
+    .modal-msg.err { color: #ff5f57; }
+  </style>
+</head>
+<body>
+
+<div class="window">
+
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div class="traffic-lights">
+      <div class="dot red" id="dot-red" title="Community" onclick="openCommunityPanel()"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+    </div>
+    <span class="titlebar-title">~/tasks/index.todo</span>
+    <div class="user-chip">
+      <span id="tb-username" class="username"></span>
+      <button class="btn-logout" onclick="doLogout()">logout</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- User section -->
+    <div class="section-label">// user</div>
+    <input
+      id="user-name"
+      class="input-field"
+      type="text"
+      placeholder="enter your name..."
+      maxlength="40"
+      readonly
+    />
+
+    <div class="divider"></div>
+
+    <!-- Add task section -->
+    <div class="section-label">// add task</div>
+    <div class="add-row">
+      <input
+        id="task-input"
+        class="input-field"
+        type="text"
+        placeholder="new task description..."
+        maxlength="80"
+      />
+      <button class="btn-add" id="add-btn" onclick="addTask()">
+        <span class="checkbox-icon"></span>
+        add
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Task list section -->
+    <div class="section-label" id="tasks-label">// tasks · 0 pending</div>
+    <div class="task-list" id="task-list">
+      <div class="empty-state" id="empty-state">no tasks yet. add one above.</div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="stats-row">
+        <div class="stat">
+          <span class="stat-num green" id="stat-done">0</span>
+          <span class="stat-label">completed</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num blue" id="stat-pending">0</span>
+          <span class="stat-label">pending</span>
+        </div>
+        <div class="stats-right">
+          <span class="pct-label" id="pct-label">0% done</span>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ Community Panel ════════════════════════════════════════════════════ -->
+<div class="community-overlay" id="community-overlay" onclick="closeCommunityPanel()"></div>
+<div class="community-panel" id="community-panel">
+  <div class="cp-header">
+    <h2>// community</h2>
+    <button class="cp-close" onclick="closeCommunityPanel()">✕</button>
+  </div>
+  <div class="cp-body">
+    <button class="btn-create-community" id="btn-open-create" onclick="openCreateModal()">
+      + create a community
+    </button>
+    <div class="cp-communities-label">your communities</div>
+    <div id="cp-community-list"><div class="cp-empty">no communities yet.</div></div>
+  </div>
+</div>
+
+<!-- ══ Create Community Modal ════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-create">
+  <div class="modal-box">
+    <div class="modal-title">// create community</div>
+    <div class="modal-label">community name</div>
+    <input id="create-name" class="modal-input" type="text" placeholder="e.g. study group, team alpha..." maxlength="60" />
+    <div class="modal-label">invite people (press Enter or comma to add)</div>
+    <div class="email-tags" id="email-tags-box" onclick="document.getElementById('email-tags-input').focus()">
+      <input id="email-tags-input" class="email-tags-input" type="email" placeholder="email address..." />
+    </div>
+    <div class="modal-hint">Invites will be sent to the entered emails. They must have a Track App account to join.</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeCreateModal()">cancel</button>
+      <button class="btn-modal-ok" id="btn-create-submit" onclick="submitCreateCommunity()">create &amp; invite →</button>
+    </div>
+    <div class="modal-msg" id="create-msg"></div>
+  </div>
+</div>
+
+<!-- ══ Invite Modal (for existing community) ═════════════════════════════ -->
+<div class="modal-backdrop" id="modal-invite">
+  <div class="modal-box">
+    <div class="modal-title" id="invite-modal-title">// invite to community</div>
+    <div class="modal-label">add people (press Enter or comma to add)</div>
+    <div class="email-tags" id="invite-email-tags-box" onclick="document.getElementById('invite-email-tags-input').focus()">
+      <input id="invite-email-tags-input" class="email-tags-input" type="email" placeholder="email address..." />
+    </div>
+    <div class="modal-hint">Invites will be sent by email. The link expires in 48 hours.</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeInviteModal()">cancel</button>
+      <button class="btn-modal-ok" id="btn-invite-submit" onclick="submitInvites()">send invites →</button>
+    </div>
+    <div class="modal-msg" id="invite-msg"></div>
+  </div>
+</div>
+
+<script>
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+  (async () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) { window.location.href = '/auth.html'; return; }
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('unauth');
+      const { user } = await res.json();
+      // Pre-fill UI
+      document.getElementById('user-name').value    = user.name;
+      document.getElementById('tb-username').textContent = user.name;
+      // Load this user's tasks from localStorage
+      const key = `tasks_${user.email}`;
+      const saved = localStorage.getItem(key);
+      if (saved) { tasks = JSON.parse(saved); nextId = Math.max(...tasks.map(t => t.id), 0) + 1; }
+      render();
+    } catch {
+      localStorage.removeItem('auth_token');
+      window.location.href = '/auth.html';
+    }
+  })();
+
+  async function doLogout() {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    window.location.href = '/auth.html';
+  }
+
+  // ── Tasks ───────────────────────────────────────────────────────────────────
+  let tasks  = [];
+  let nextId = 1;
+
+  function saveToStorage() {
+    const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+    if (user.email) localStorage.setItem(`tasks_${user.email}`, JSON.stringify(tasks));
+  }
+
+  function addTask() {
+    const input = document.getElementById('task-input');
+    const text  = input.value.trim();
+    if (!text) { input.focus(); return; }
+    tasks.push({ id: nextId++, text, done: false });
+    input.value = '';
+    saveToStorage();
+    render();
+    input.focus();
+  }
+
+  function toggleTask(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) t.done = !t.done;
+    saveToStorage();
+    render();
+  }
+
+  function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    saveToStorage();
+    render();
+  }
+
+  function render() {
+    const list    = document.getElementById('task-list');
+    const empty   = document.getElementById('empty-state');
+    const label   = document.getElementById('tasks-label');
+    const done    = tasks.filter(t => t.done).length;
+    const pending = tasks.filter(t => !t.done).length;
+    const total   = tasks.length;
+    const pct     = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    document.getElementById('stat-done').textContent     = done;
+    document.getElementById('stat-pending').textContent  = pending;
+    document.getElementById('pct-label').textContent     = pct + '% done';
+    document.getElementById('progress-fill').style.width = pct + '%';
+    label.textContent = `// tasks · ${pending} pending`;
+
+    [...list.querySelectorAll('.task-item')].forEach(el => el.remove());
+
+    if (tasks.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    tasks.forEach(task => {
+      const item = document.createElement('div');
+      item.className  = 'task-item' + (task.done ? ' done' : '');
+      item.dataset.id = task.id;
+      item.innerHTML  = `
+        <div class="task-circle" onclick="toggleTask(${task.id})" title="Toggle complete"></div>
+        <span class="task-text">${escHtml(task.text)}</span>
+        <span class="badge ${task.done ? 'done' : 'todo'}">${task.done ? 'done' : 'todo'}</span>
+        <button class="btn-delete" onclick="deleteTask(${task.id})" title="Remove task">
+          <span class="cb-icon"></span>
+        </button>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('task-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  // ── Community Panel ─────────────────────────────────────────────────────────
+  function openCommunityPanel() {
+    document.getElementById('community-panel').classList.add('open');
+    document.getElementById('community-overlay').classList.add('open');
+    loadMyCommunities();
+  }
+  function closeCommunityPanel() {
+    document.getElementById('community-panel').classList.remove('open');
+    document.getElementById('community-overlay').classList.remove('open');
+  }
+
+  async function loadMyCommunities() {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/communities/mine', {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      renderCommunityList(data.communities || []);
+    } catch { /* silent */ }
+  }
+
+  function renderCommunityList(communities) {
+    const list = document.getElementById('cp-community-list');
+    if (!communities.length) {
+      list.innerHTML = '<div class="cp-empty">no communities yet.</div>';
+      return;
+    }
+    list.innerHTML = communities.map(c => `
+      <div class="cp-community-card">
+        <div class="cp-community-card-name">${escHtml(c.name)}</div>
+        <div class="cp-community-card-meta">${c.member_count} member${c.member_count !== 1 ? 's' : ''} · ${
+          c.members.map(m => escHtml(m.name)).join(', ')
+        }</div>
+        <button class="btn-invite-member" onclick="openInviteModal(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}')">+ invite people</button>
+      </div>
+    `).join('');
+  }
+
+  // ── Email tag input helper ──────────────────────────────────────────────────
+  function makeTagInput(inputId, tagBoxId) {
+    const input = document.getElementById(inputId);
+    const box   = document.getElementById(tagBoxId);
+    const emails = [];
+
+    function addEmail(raw) {
+      const email = raw.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+      if (emails.includes(email)) return;
+      emails.push(email);
+      const tag = document.createElement('div');
+      tag.className = 'email-tag';
+      tag.dataset.email = email;
+      tag.innerHTML = `<span>${escHtml(email)}</span><span class="email-tag-remove" onclick="this.parentElement.remove();emails_${inputId}.splice(emails_${inputId}.indexOf('${email}'),1)">×</span>`;
+      box.insertBefore(tag, input);
+    }
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        addEmail(input.value);
+        input.value = '';
+      }
+      if (e.key === 'Backspace' && !input.value) {
+        const tags = box.querySelectorAll('.email-tag');
+        if (tags.length) {
+          const last = tags[tags.length - 1];
+          emails.splice(emails.indexOf(last.dataset.email), 1);
+          last.remove();
+        }
+      }
+    });
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) { addEmail(input.value); input.value = ''; }
+    });
+
+    return { getEmails: () => [...emails], clear: () => { emails.length = 0; box.querySelectorAll('.email-tag').forEach(t => t.remove()); input.value = ''; } };
+  }
+
+  let createTagHelper, inviteTagHelper;
+
+  // ── Create Community Modal ──────────────────────────────────────────────────
+  function openCreateModal() {
+    document.getElementById('modal-create').classList.add('open');
+    document.getElementById('create-name').value = '';
+    document.getElementById('create-msg').textContent = '';
+    document.getElementById('create-msg').className = 'modal-msg';
+    if (!createTagHelper) createTagHelper = makeTagInput('email-tags-input', 'email-tags-box');
+    else createTagHelper.clear();
+    setTimeout(() => document.getElementById('create-name').focus(), 50);
+  }
+  function closeCreateModal() {
+    document.getElementById('modal-create').classList.remove('open');
+  }
+
+  async function submitCreateCommunity() {
+    const name = document.getElementById('create-name').value.trim();
+    const msgEl = document.getElementById('create-msg');
+    const btn   = document.getElementById('btn-create-submit');
+    if (!name) { showMsg(msgEl, 'err', 'Please enter a community name.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'creating...';
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      // Step 1: create
+      const cRes = await fetch('/api/communities/create', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name }),
+      });
+      const cData = await cRes.json();
+      if (!cRes.ok) { showMsg(msgEl, 'err', cData.error || 'Failed to create community.'); return; }
+
+      const communityId = cData.community.id;
+
+      // Step 2: send invites if any emails
+      const emails = createTagHelper ? createTagHelper.getEmails() : [];
+      if (emails.length) {
+        btn.textContent = 'sending invites...';
+        const iRes = await fetch('/api/communities/invite', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ communityId, emails }),
+        });
+        const iData = await iRes.json();
+        const failed = (iData.results || []).filter(r => r.status === 'failed').map(r => r.email);
+        if (failed.length) {
+          showMsg(msgEl, 'err', `Community created! Failed to send invite to: ${failed.join(', ')}`);
+        } else {
+          showMsg(msgEl, 'ok', `✓ Community "${name}" created & ${emails.length} invite${emails.length > 1 ? 's' : ''} sent!`);
+        }
+      } else {
+        showMsg(msgEl, 'ok', `✓ Community "${name}" created!`);
+      }
+
+      loadMyCommunities();
+      setTimeout(closeCreateModal, 1800);
+    } catch (err) {
+      showMsg(msgEl, 'err', 'Network error. Please try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'create & invite →';
+    }
+  }
+
+  // ── Invite Modal (existing community) ──────────────────────────────────────
+  let activeInviteCommunityId = null;
+
+  function openInviteModal(communityId, communityName) {
+    activeInviteCommunityId = communityId;
+    document.getElementById('invite-modal-title').textContent = `// invite to "${communityName}"`;
+    document.getElementById('invite-msg').textContent = '';
+    document.getElementById('invite-msg').className = 'modal-msg';
+    document.getElementById('modal-invite').classList.add('open');
+    if (!inviteTagHelper) inviteTagHelper = makeTagInput('invite-email-tags-input', 'invite-email-tags-box');
+    else inviteTagHelper.clear();
+    setTimeout(() => document.getElementById('invite-email-tags-input').focus(), 50);
+  }
+  function closeInviteModal() {
+    document.getElementById('modal-invite').classList.remove('open');
+    activeInviteCommunityId = null;
+  }
+
+  async function submitInvites() {
+    const msgEl = document.getElementById('invite-msg');
+    const btn   = document.getElementById('btn-invite-submit');
+    const emails = inviteTagHelper ? inviteTagHelper.getEmails() : [];
+    if (!emails.length) { showMsg(msgEl, 'err', 'Add at least one email.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'sending...';
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/communities/invite', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ communityId: activeInviteCommunityId, emails }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg(msgEl, 'err', data.error || 'Failed.'); return; }
+
+      const failed = (data.results || []).filter(r => r.status === 'failed').map(r => r.email);
+      if (failed.length) {
+        showMsg(msgEl, 'err', `Sent some. Failed: ${failed.join(', ')}`);
+      } else {
+        showMsg(msgEl, 'ok', `✓ Invite${emails.length > 1 ? 's' : ''} sent to ${emails.join(', ')}`);
+        setTimeout(closeInviteModal, 1800);
+      }
+    } catch {
+      showMsg(msgEl, 'err', 'Network error.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'send invites →';
+    }
+  }
+
+  function showMsg(el, type, text) {
+    el.className = `modal-msg ${type}`;
+    el.textContent = text;
+  }
+
+  // Close modals on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeCreateModal();
+      closeInviteModal();
+    }
+  });
+</script>
+
+</body>
+</html>

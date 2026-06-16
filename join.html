@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join Community · Track App</title>
+  <meta name="description" content="Join a community on Track App." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0a0c10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      padding: 2rem;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background: #111318;
+      border-radius: 14px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 80px rgba(0,0,0,0.7);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      background: #161920;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 11px;
+      color: #555c6e;
+      letter-spacing: 0.04em;
+    }
+    .card-header span { color: #4ec9b0; }
+
+    .card-body {
+      padding: 36px 32px;
+      text-align: center;
+    }
+
+    .icon {
+      font-size: 40px;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .card-title {
+      font-size: 18px;
+      color: #c9d1d9;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .card-sub {
+      font-size: 13px;
+      color: #555c6e;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .community-name {
+      color: #28c840;
+      font-weight: 600;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      letter-spacing: 0.04em;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .btn-green {
+      background: #1a4d2a;
+      border: 1.5px solid #28c840;
+      color: #28c840;
+    }
+    .btn-green:hover {
+      background: #1f5c32;
+      box-shadow: 0 0 0 3px rgba(40,200,64,0.15);
+    }
+    .btn-cyan {
+      background: #1a2d3a;
+      border: 1.5px solid #4ec9b0;
+      color: #4ec9b0;
+    }
+    .btn-cyan:hover {
+      background: #1f3848;
+      box-shadow: 0 0 0 3px rgba(78,201,176,0.15);
+    }
+    .btn-red {
+      background: #2d1a1a;
+      border: 1.5px solid #ff5f57;
+      color: #ff5f57;
+    }
+    .btn-red:hover {
+      background: #3a1f1f;
+      box-shadow: 0 0 0 3px rgba(255,95,87,0.15);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 28px; height: 28px;
+      border: 3px solid rgba(255,255,255,0.08);
+      border-top-color: #4ec9b0;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      color: #555c6e;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <span>// track app</span> · community invite
+  </div>
+  <div class="card-body" id="card-body">
+    <div class="spinner"></div>
+    <div class="loading-text">verifying invite...</div>
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+
+  async function processJoin() {
+    const body = document.getElementById('card-body');
+
+    if (!token) {
+      body.innerHTML = `
+        <span class="icon">🔗</span>
+        <div class="card-title">Invalid link</div>
+        <div class="card-sub">This invite link is missing or malformed.</div>
+        <a href="/auth.html" class="btn btn-cyan">go to app →</a>
+      `;
+      return;
+    }
+
+    try {
+      const res  = await fetch(`/api/communities/join?token=${encodeURIComponent(token)}`);
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.message === 'already_member') {
+          body.innerHTML = `
+            <span class="icon">👥</span>
+            <div class="card-title">Already a member</div>
+            <div class="card-sub">You're already in <span class="community-name">${escHtml(data.communityName)}</span>.<br>Go to the app to see your community.</div>
+            <a href="/index.html" class="btn btn-green">open app →</a>
+          `;
+        } else {
+          body.innerHTML = `
+            <span class="icon">🎉</span>
+            <div class="card-title">You've joined!</div>
+            <div class="card-sub">Welcome to <span class="community-name">${escHtml(data.communityName)}</span>, ${escHtml(data.user.name)}!<br>Click below to open the app.</div>
+            <a href="/index.html" class="btn btn-green">open track app →</a>
+          `;
+        }
+      } else {
+        if (data.error === 'no_account') {
+          body.innerHTML = `
+            <span class="icon">🚫</span>
+            <div class="card-title">You don't have an account</div>
+            <div class="card-sub">You need a Track App account to join <span class="community-name">${escHtml(data.communityName)}</span>.<br>Create one — it only takes a minute.</div>
+            <a href="/auth.html" class="btn btn-cyan">create now →</a>
+          `;
+        } else if (data.error === 'Invite link has expired.') {
+          body.innerHTML = `
+            <span class="icon">⏰</span>
+            <div class="card-title">Invite expired</div>
+            <div class="card-sub">This invite link has expired (links are valid for 48 hours).<br>Ask the community owner to send a new invite.</div>
+            <a href="/auth.html" class="btn btn-cyan">go to app →</a>
+          `;
+        } else {
+          body.innerHTML = `
+            <span class="icon">❌</span>
+            <div class="card-title">Invalid invite</div>
+            <div class="card-sub">${escHtml(data.error || 'This invite link is invalid or has already been used.')}</div>
+            <a href="/auth.html" class="btn btn-cyan">go to app →</a>
+          `;
+        }
+      }
+    } catch {
+      document.getElementById('card-body').innerHTML = `
+        <span class="icon">⚠️</span>
+        <div class="card-title">Something went wrong</div>
+        <div class="card-sub">Could not connect to the server. Make sure it's running.</div>
+        <button class="btn btn-red" onclick="location.reload()">try again</button>
+      `;
+    }
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  processJoin();
+</script>
+</body>
+</html>
