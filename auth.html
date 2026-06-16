@@ -343,7 +343,7 @@
       <div class="dot green"></div>
     </div>
     <span class="titlebar-title">~/auth/index</span>
-    <div class="titlebar-spacer"></div>
+    <div style="font-size:13px;color:#4ec9b0;font-weight:600;letter-spacing:0.04em;">pitstop</div>
   </div>
 
   <div class="body">
@@ -364,7 +364,7 @@
       <div class="field">
         <div class="section-label">// password</div>
         <div class="input-wrap">
-          <input id="login-password" class="input-field" type="password" placeholder="your password..." />
+          <input id="login-password" class="input-field" type="password" placeholder="your password" />
           <button class="eye-btn" onclick="togglePwd('login-password', this)">👁</button>
         </div>
       </div>
@@ -393,7 +393,7 @@
       <div class="field">
         <div class="section-label">// your full name</div>
         <input id="signup-name" class="input-field" type="text"
-          placeholder="e.g. Yashas S"
+          placeholder="e.g. Alex Carter"
           autocomplete="name"
           maxlength="40" />
         <div style="font-size:11px;color:#3a4150;margin-top:5px;">Enter your name (not your email)</div>
@@ -464,7 +464,7 @@
       <div class="field">
         <div class="section-label">// set password</div>
         <div class="input-wrap">
-          <input id="signup-password" class="input-field" type="password" placeholder="min. 8 characters..." oninput="checkStrength(this.value)" />
+          <input id="signup-password" class="input-field" type="password" placeholder="min. 8 characters" oninput="checkStrength(this.value)" />
           <button class="eye-btn" onclick="togglePwd('signup-password', this)">👁</button>
         </div>
         <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
@@ -474,7 +474,7 @@
       <div class="field">
         <div class="section-label">// confirm password</div>
         <div class="input-wrap">
-          <input id="signup-confirm" class="input-field" type="password" placeholder="repeat your password..." />
+          <input id="signup-confirm" class="input-field" type="password" placeholder="repeat your password" />
           <button class="eye-btn" onclick="togglePwd('signup-confirm', this)">👁</button>
         </div>
       </div>
