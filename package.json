@@ -1,5 +1,5 @@
 {
-  "name": "track-todo-app",
+  "name": "pitstop",
   "version": "1.0.0",
   "description": "Terminal-style todo app with full authentication",
   "main": "server.js",

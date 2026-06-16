@@ -131,7 +131,7 @@ const transporter = nodemailer.createTransport({
 
 async function sendMail({ to, subject, html }) {
   await transporter.sendMail({
-    from: `"Track App" <${process.env.EMAIL_USER}>`,
+    from: `"Pitstop" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
@@ -142,7 +142,7 @@ async function sendMail({ to, subject, html }) {
 function otpEmailHtml(name, otp) {
   return `
   <div style="font-family:'Courier New',monospace;background:#111318;color:#c9d1d9;padding:36px;border-radius:12px;max-width:480px;margin:0 auto;">
-    <p style="color:#4ec9b0;margin:0 0 8px;">// track app</p>
+    <p style="color:#4ec9b0;margin:0 0 8px;">// pitstop</p>
     <h2 style="margin:0 0 24px;font-size:20px;">Your verification code</h2>
     <p style="margin:0 0 8px;">Hi <strong>${name}</strong>,</p>
     <p style="margin:0 0 24px;color:#8b949e;">Use the code below to verify your email. It expires in <strong style="color:#c9d1d9;">10 minutes</strong>.</p>
@@ -154,7 +154,7 @@ function otpEmailHtml(name, otp) {
 function resetEmailHtml(resetUrl) {
   return `
   <div style="font-family:'Courier New',monospace;background:#111318;color:#c9d1d9;padding:36px;border-radius:12px;max-width:480px;margin:0 auto;">
-    <p style="color:#4ec9b0;margin:0 0 8px;">// track app</p>
+    <p style="color:#4ec9b0;margin:0 0 8px;">// pitstop</p>
     <h2 style="margin:0 0 24px;font-size:20px;">Reset your password</h2>
     <p style="margin:0 0 24px;color:#8b949e;">Click the button below to reset your password. This link expires in <strong style="color:#c9d1d9;">1 hour</strong>.</p>
     <a href="${resetUrl}" style="display:inline-block;background:#1a4d2a;border:1.5px solid #28c840;color:#28c840;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;letter-spacing:0.04em;">reset password &rarr;</a>
@@ -166,12 +166,12 @@ function resetEmailHtml(resetUrl) {
 function communityInviteEmailHtml(inviterName, communityName, joinUrl) {
   return `
   <div style="font-family:'Courier New',monospace;background:#111318;color:#c9d1d9;padding:36px;border-radius:12px;max-width:480px;margin:0 auto;">
-    <p style="color:#4ec9b0;margin:0 0 8px;">// track app</p>
+    <p style="color:#4ec9b0;margin:0 0 8px;">// pitstop</p>
     <h2 style="margin:0 0 24px;font-size:20px;">You've been invited to a community</h2>
     <p style="margin:0 0 8px;"><strong>${inviterName}</strong> has invited you to join the community <strong style="color:#28c840;">${communityName}</strong>.</p>
     <p style="margin:0 0 24px;color:#8b949e;">Click the button below to join. This invite expires in <strong style="color:#c9d1d9;">48 hours</strong>.</p>
     <a href="${joinUrl}" style="display:inline-block;background:#1a4d2a;border:1.5px solid #28c840;color:#28c840;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;letter-spacing:0.04em;">join community &rarr;</a>
-    <p style="color:#555c6e;font-size:12px;margin-top:24px;">You need a Track App account to join. If you don't have one, you'll be prompted to create one.</p>
+    <p style="color:#555c6e;font-size:12px;margin-top:24px;">You need a Pitstop account to join. If you don't have one, you'll be prompted to create one.</p>
     <p style="color:#404855;font-size:11px;margin:8px 0 0;word-break:break-all;">Or copy this link: ${joinUrl}</p>
   </div>`;
 }
@@ -218,7 +218,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
   dbRun('INSERT INTO otps (email, otp, name, expires_at) VALUES (?, ?, ?, ?)', [emailLower, otp, name, expires]);
 
   try {
-    await sendMail({ to: emailLower, subject: 'Your Track App verification code', html: otpEmailHtml(name, otp) });
+    await sendMail({ to: emailLower, subject: 'Your Pitstop verification code', html: otpEmailHtml(name, otp) });
     res.json({ message: 'OTP sent successfully.' });
   } catch (err) {
     console.error('Email error:', err.message);
@@ -319,7 +319,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
   const resetUrl = `${BASE_URL}/reset-password.html?token=${token}`;
   try {
-    await sendMail({ to: emailLower, subject: 'Reset your Track App password', html: resetEmailHtml(resetUrl) });
+    await sendMail({ to: emailLower, subject: 'Reset your Pitstop password', html: resetEmailHtml(resetUrl) });
   } catch (err) {
     console.error('Email error:', err.message);
     return res.status(500).json({ error: 'Failed to send reset email. Check your .env credentials.' });
@@ -408,7 +408,7 @@ app.post('/api/communities/invite', requireAuth, async (req, res) => {
     try {
       await sendMail({
         to: email,
-        subject: `${inviter.name} invited you to "${community.name}" on Track App`,
+        subject: `${inviter.name} invited you to "${community.name}" on Pitstop`,
         html: communityInviteEmailHtml(inviter.name, community.name, joinUrl),
       });
       results.push({ email, status: 'sent' });
@@ -437,7 +437,7 @@ app.get('/api/communities/join', (req, res) => {
   if (!user) {
     return res.status(403).json({
       error: 'no_account',
-      message: `You don't have an account on Track App. Create one to join "${community.name}".`,
+      message: `You don't have an account on Pitstop. Create one to join "${community.name}".`,
       communityName: community.name,
     });
   }
@@ -484,7 +484,7 @@ app.get('/api/communities/mine', requireAuth, (req, res) => {
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 initDb().then(() => {
   app.listen(PORT, () => {
-    console.log(`\n  ✓  Track App  →  http://localhost:${PORT}`);
+    console.log(`\n  ✓  Pitstop  →  http://localhost:${PORT}`);
     console.log(`  ✓  Auth page  →  http://localhost:${PORT}/auth.html\n`);
     if (!process.env.EMAIL_USER || process.env.EMAIL_USER === 'your_gmail@gmail.com') {
       console.warn('  ⚠  .env not configured — email features will not work.');

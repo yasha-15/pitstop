@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Join Community · Track App</title>
-  <meta name="description" content="Join a community on Track App." />
+  <title>Join Community · Pitstop</title>
+  <meta name="description" content="Join a community on Pitstop." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
@@ -129,7 +129,7 @@
 <body>
 <div class="card">
   <div class="card-header">
-    <span>// track app</span> · community invite
+    <span>// pitstop</span> · community invite
   </div>
   <div class="card-body" id="card-body">
     <div class="spinner"></div>
@@ -171,7 +171,7 @@
             <span class="icon">🎉</span>
             <div class="card-title">You've joined!</div>
             <div class="card-sub">Welcome to <span class="community-name">${escHtml(data.communityName)}</span>, ${escHtml(data.user.name)}!<br>Click below to open the app.</div>
-            <a href="/index.html" class="btn btn-green">open track app →</a>
+            <a href="/index.html" class="btn btn-green">open pitstop →</a>
           `;
         }
       } else {
@@ -179,7 +179,7 @@
           body.innerHTML = `
             <span class="icon">🚫</span>
             <div class="card-title">You don't have an account</div>
-            <div class="card-sub">You need a Track App account to join <span class="community-name">${escHtml(data.communityName)}</span>.<br>Create one — it only takes a minute.</div>
+            <div class="card-sub">You need a Pitstop account to join <span class="community-name">${escHtml(data.communityName)}</span>.<br>Create one — it only takes a minute.</div>
             <a href="/auth.html" class="btn btn-cyan">create now →</a>
           `;
         } else if (data.error === 'Invite link has expired.') {
