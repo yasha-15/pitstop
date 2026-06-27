@@ -525,7 +525,7 @@
   // ── Alert helpers ──────────────────────────────────────────────────────────
   function showAlert(id, msg, type = 'error') {
     const el = document.getElementById(id);
-    el.textContent = msg;
+    el.innerHTML = msg;
     el.className = `alert ${type} show`;
   }
   function clearAlert(id) {
@@ -692,7 +692,7 @@
 
     setLoading('s1-btn', true);
     try {
-      await api('/api/auth/send-otp', { name, email });
+      const data = await api('/api/auth/send-otp', { name, email });
       signupName  = name;
       signupEmail = email;
       document.getElementById('otp-sent-to').textContent = `code sent to: ${email}`;
@@ -700,6 +700,20 @@
 
       document.getElementById('panel-signup-1').classList.remove('active');
       document.getElementById('panel-signup-2').classList.add('active');
+
+      if (data.devOtp) {
+        // Render helper toast/alert inside s2-alert
+        showAlert('s2-alert', `🛠️ <strong>Dev Mode</strong>: SMTP is blocked. Your OTP code is <strong>${data.devOtp}</strong> (auto-filled).`, 'success');
+        
+        // Auto-fill the OTP inputs
+        const digits = data.devOtp.split('');
+        const inputs = document.querySelectorAll('.otp-digit');
+        inputs.forEach((input, index) => {
+          input.value = digits[index];
+        });
+      } else {
+        showAlert('s2-alert', 'Verification code sent successfully!', 'success');
+      }
     } catch (err) {
       if (err.message && err.message.toLowerCase().includes('already exists')) {
         showAlert('s1-alert', `⚠️ ${email} already has an account. Please log in instead.`);
@@ -792,7 +806,11 @@
     setLoading('fp-btn', true);
     try {
       const data = await api('/api/auth/forgot-password', { email });
-      showAlert('fp-alert', data.message, 'success');
+      if (data.devResetUrl) {
+        showAlert('fp-alert', `🛠️ <strong>Dev Mode</strong>: SMTP is blocked. <a href="${data.devResetUrl}" style="color:#28c840;text-decoration:underline;font-weight:bold;">Click here to reset your password</a>`, 'success');
+      } else {
+        showAlert('fp-alert', data.message, 'success');
+      }
     } catch (err) {
       showAlert('fp-alert', err.message);
     } finally {
