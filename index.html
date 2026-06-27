@@ -1,0 +1,2111 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>~/tasks/index.todo · Pitstop</title>
+  <meta name="description" content="A terminal-style todo app for managing your tasks efficiently." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #0a0c10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      padding: 2rem;
+    }
+
+    .window {
+      width: 100%;
+      max-width: 680px;
+      background: #111318;
+      border-radius: 14px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 32px 80px rgba(0,0,0,0.7),
+        0 8px 24px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+
+    /* ── Title bar ── */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: #161920;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      user-select: none;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: filter 0.2s;
+    }
+    .dot:hover { filter: brightness(1.25); }
+    .dot.red    { background: #ff5f57; }
+    .dot.yellow { background: #febc2e; }
+    .dot.green  { background: #28c840; }
+
+    .titlebar-title {
+      font-size: 12px;
+      color: #555c6e;
+      letter-spacing: 0.02em;
+    }
+
+    .titlebar-spacer { width: 55px; }
+
+    /* ── Auth user chip ── */
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #555c6e;
+    }
+    .user-chip .username { color: #4ec9b0; }
+    .btn-logout {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 5px;
+      padding: 3px 9px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #555c6e;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-logout:hover { color: #ff5f57; border-color: rgba(255,95,87,0.35); }
+
+    /* ── Main body ── */
+    .body {
+      padding: 28px 28px 24px;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 13px;
+      color: #4ec9b0;
+      margin-bottom: 12px;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Inputs ── */
+    .input-field {
+      width: 100%;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: #c9d1d9;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      caret-color: #4ec9b0;
+    }
+    .input-field::placeholder { color: #404855; }
+    .input-field:focus {
+      border-color: rgba(78, 201, 176, 0.35);
+      box-shadow: 0 0 0 3px rgba(78, 201, 176, 0.08);
+    }
+
+    /* ── Add task row ── */
+    .add-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .add-row .input-field {
+      flex: 1;
+    }
+
+    .btn-add {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 8px;
+      color: #c9d1d9;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-add:hover {
+      background: #242a35;
+      border-color: rgba(255,255,255,0.18);
+    }
+    .btn-add .checkbox-icon {
+      width: 13px;
+      height: 13px;
+      border: 1.5px solid #555c6e;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.05);
+      margin: 24px 0;
+    }
+
+    /* ── Task list ── */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 14px 16px;
+      transition: border-color 0.2s, background 0.2s;
+      animation: slideIn 0.25s ease;
+    }
+    .task-item:hover {
+      background: #1a2030;
+      border-color: rgba(255,255,255,0.09);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* circle toggle */
+    .task-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid #3a4150;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .task-circle:hover { border-color: #28c840; }
+
+    .task-item.done .task-circle {
+      background: #1a4d2a;
+      border-color: #28c840;
+    }
+    .task-item.done .task-circle::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #28c840;
+      display: block;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 14px;
+      color: #c9d1d9;
+      letter-spacing: 0.01em;
+    }
+    .task-item.done .task-text {
+      color: #555c6e;
+      text-decoration: line-through;
+      text-decoration-color: #404855;
+    }
+
+    /* badge */
+    .badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      border: 1.5px solid;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .badge.done  { color: #28c840; border-color: #28c840; }
+    .badge.todo  { color: #4d9fec; border-color: #4d9fec; }
+
+    /* delete button */
+    .btn-delete {
+      width: 34px;
+      height: 34px;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-delete:hover {
+      background: #2d1a1a;
+      border-color: rgba(255, 80, 80, 0.35);
+    }
+    .btn-delete .cb-icon {
+      width: 11px;
+      height: 11px;
+      border: 1.5px solid #555c6e;
+      border-radius: 2px;
+      transition: border-color 0.2s;
+    }
+    .btn-delete:hover .cb-icon { border-color: #ff5f57; }
+
+    /* empty state */
+    .empty-state {
+      text-align: center;
+      padding: 28px 0 10px;
+      color: #3a4150;
+      font-size: 13px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stats-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 28px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .stat-num {
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .stat-num.green  { color: #28c840; }
+    .stat-num.blue   { color: #4d9fec; }
+
+    .stat-label {
+      font-size: 11px;
+      color: #555c6e;
+      letter-spacing: 0.04em;
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-left: auto;
+    }
+
+    .stats-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-left: auto;
+    }
+
+    .pct-label {
+      font-size: 12px;
+      color: #555c6e;
+      white-space: nowrap;
+    }
+
+    .progress-bar-track {
+      width: 180px;
+      height: 5px;
+      background: #1c2028;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #28c840;
+      border-radius: 99px;
+      transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 0 8px rgba(40, 200, 64, 0.5);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 520px) {
+      .body { padding: 20px 16px 18px; }
+      .progress-bar-track { width: 100px; }
+    }
+
+    /* ══ Community Panel ══════════════════════════════════════════════════ */
+    .community-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .community-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .community-panel {
+      position: fixed;
+      top: 0; right: 0;
+      width: 360px;
+      max-width: 94vw;
+      height: 100vh;
+      background: #111318;
+      border-left: 1px solid rgba(255,255,255,0.07);
+      box-shadow: -24px 0 60px rgba(0,0,0,0.6);
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .community-panel.open {
+      transform: translateX(0);
+    }
+
+    .cp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .cp-header h2 {
+      font-size: 13px;
+      color: #4ec9b0;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .cp-close {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 5px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: #555c6e;
+      font-size: 16px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .cp-close:hover { color: #ff5f57; border-color: rgba(255,95,87,0.35); }
+
+    .cp-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .btn-create-community {
+      width: 100%;
+      padding: 13px 18px;
+      background: #1a2d1e;
+      border: 1.5px solid #28c840;
+      border-radius: 8px;
+      color: #28c840;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.2s, box-shadow 0.2s;
+      text-align: left;
+    }
+    .btn-create-community:hover {
+      background: #1f3624;
+      box-shadow: 0 0 0 3px rgba(40,200,64,0.12);
+    }
+
+    .cp-communities-label {
+      font-size: 11px;
+      color: #555c6e;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 22px 0 10px;
+    }
+
+    .cp-community-card {
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      animation: slideIn 0.2s ease;
+    }
+    .cp-community-card-name {
+      font-size: 13px;
+      color: #c9d1d9;
+      margin-bottom: 6px;
+    }
+    .cp-community-card-meta {
+      font-size: 11px;
+      color: #555c6e;
+      margin-bottom: 10px;
+    }
+    .btn-invite-member {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 5px;
+      padding: 5px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #4ec9b0;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-invite-member:hover {
+      background: rgba(78,201,176,0.08);
+      border-color: rgba(78,201,176,0.3);
+    }
+
+    .cp-empty {
+      text-align: center;
+      color: #3a4150;
+      font-size: 12px;
+      padding: 24px 0;
+    }
+
+    /* ── Modals ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal-box {
+      background: #161920;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 28px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+      transform: scale(0.94) translateY(12px);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-backdrop.open .modal-box {
+      transform: scale(1) translateY(0);
+    }
+    .modal-title {
+      font-size: 14px;
+      color: #4ec9b0;
+      margin-bottom: 20px;
+      letter-spacing: 0.02em;
+    }
+    .modal-label {
+      font-size: 11px;
+      color: #555c6e;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .modal-input {
+      width: 100%;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 7px;
+      padding: 12px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #c9d1d9;
+      outline: none;
+      margin-bottom: 16px;
+      caret-color: #4ec9b0;
+      transition: border-color 0.2s;
+    }
+    .modal-input:focus { border-color: rgba(78,201,176,0.35); }
+    .modal-input::placeholder { color: #404855; }
+
+    .email-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 7px;
+      padding: 8px;
+      min-height: 44px;
+      margin-bottom: 16px;
+      cursor: text;
+      transition: border-color 0.2s;
+    }
+    .email-tags:focus-within { border-color: rgba(78,201,176,0.35); }
+    .email-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a3040;
+      border: 1px solid rgba(78,201,176,0.25);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      color: #4ec9b0;
+    }
+    .email-tag-remove {
+      cursor: pointer;
+      color: #555c6e;
+      font-size: 13px;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    .email-tag-remove:hover { color: #ff5f57; }
+    .email-tags-input {
+      flex: 1;
+      min-width: 120px;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #c9d1d9;
+      caret-color: #4ec9b0;
+    }
+    .email-tags-input::placeholder { color: #404855; }
+
+    .modal-hint {
+      font-size: 11px;
+      color: #3a4150;
+      margin-bottom: 20px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-modal-cancel {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 7px;
+      padding: 10px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #555c6e;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-modal-cancel:hover { color: #c9d1d9; border-color: rgba(255,255,255,0.18); }
+    .btn-modal-ok {
+      background: #1a4d2a;
+      border: 1.5px solid #28c840;
+      border-radius: 7px;
+      padding: 10px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #28c840;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.04em;
+    }
+    .btn-modal-ok:hover {
+      background: #1f5c32;
+      box-shadow: 0 0 0 3px rgba(40,200,64,0.15);
+    }
+    .btn-modal-ok:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .modal-msg {
+      font-size: 12px;
+      margin-top: 12px;
+      min-height: 18px;
+      letter-spacing: 0.02em;
+    }
+    .modal-msg.ok  { color: #28c840; }
+    .modal-msg.err { color: #ff5f57; }
+
+    /* Leaderboard Styles */
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .leaderboard-item.self {
+      border-color: rgba(78, 201, 176, 0.35);
+      background: #1a2030;
+    }
+    .leaderboard-rank {
+      font-size: 13px;
+      font-weight: 600;
+      width: 24px;
+      text-align: center;
+      color: #8b949e;
+    }
+    .leaderboard-rank.rank-1 { color: #febc2e; font-size: 16px; }
+    .leaderboard-rank.rank-2 { color: #c0c0c0; }
+    .leaderboard-rank.rank-3 { color: #cd7f32; }
+    
+    .leaderboard-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .leaderboard-name {
+      font-size: 12px;
+      color: #c9d1d9;
+      font-weight: 500;
+    }
+    .leaderboard-item.self .leaderboard-name::after {
+      content: ' (you)';
+      color: #4ec9b0;
+      font-size: 11px;
+    }
+    .leaderboard-stats {
+      font-size: 11px;
+      color: #555c6e;
+    }
+    .leaderboard-progress-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 80px;
+      flex-shrink: 0;
+    }
+    .leaderboard-progress-track {
+      flex: 1;
+      height: 4px;
+      background: #1c2028;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .leaderboard-progress-fill {
+      height: 100%;
+      background: #28c840;
+      border-radius: 99px;
+    }
+    .leaderboard-pct {
+      font-size: 12px;
+      font-weight: 600;
+      color: #28c840;
+      width: 36px;
+      text-align: right;
+    }
+
+    /* ── Light Theme Overrides ── */
+    body.light-theme {
+      background: #f0f2f5;
+    }
+    body.light-theme .window,
+    body.light-theme .modal,
+    body.light-theme .modal-box,
+    body.light-theme .community-panel {
+      background: #ffffff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 32px 80px rgba(0,0,0,0.15);
+    }
+    body.light-theme .titlebar {
+      background: #f6f8fa;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    body.light-theme .titlebar-title {
+      color: #57606a;
+    }
+    body.light-theme .input-field,
+    body.light-theme .modal-input,
+    body.light-theme .email-tags,
+    body.light-theme .otp-digit {
+      background: #f6f8fa;
+      border-color: rgba(0,0,0,0.1);
+      color: #24292f;
+    }
+    body.light-theme .input-field::placeholder,
+    body.light-theme .modal-input::placeholder {
+      color: #8c959f;
+    }
+    body.light-theme .input-field:focus,
+    body.light-theme .modal-input:focus {
+      border-color: rgba(78, 201, 176, 0.6);
+      box-shadow: 0 0 0 3px rgba(78, 201, 176, 0.15);
+    }
+    body.light-theme .task-item,
+    body.light-theme .cp-community-card,
+    body.light-theme .leaderboard-item {
+      background: #fafbfc;
+      border-color: rgba(0,0,0,0.06);
+    }
+    body.light-theme .task-item:hover,
+    body.light-theme .cp-community-card:hover,
+    body.light-theme .leaderboard-item:hover {
+      background: #f3f4f6;
+    }
+    body.light-theme .leaderboard-item.self {
+      background: #eefcf8;
+      border-color: rgba(78, 201, 176, 0.4);
+    }
+    body.light-theme .task-text,
+    body.light-theme .cp-community-card-name,
+    body.light-theme .leaderboard-name {
+      color: #24292f;
+    }
+    body.light-theme .btn-add,
+    body.light-theme .btn-delete {
+      background: #f6f8fa;
+      border-color: rgba(0,0,0,0.1);
+      color: #24292f;
+    }
+    body.light-theme .btn-add:hover {
+      background: #eaeef2;
+    }
+    body.light-theme .btn-delete:hover {
+      background: #ffebe9;
+      border-color: rgba(255,100,100,0.3);
+    }
+    body.light-theme .divider {
+      background: rgba(0,0,0,0.06);
+    }
+    body.light-theme .stat-num.blue {
+      color: #0969da;
+    }
+    body.light-theme .progress-bar-track {
+      background: #eaeef2;
+    }
+    body.light-theme .email-tag {
+      background: #ddf4ff;
+      border-color: rgba(9,105,218,0.2);
+    }
+    body.light-theme #cp-chat-log {
+      background: #fafbfc;
+      border-color: rgba(0,0,0,0.06);
+    }
+  </style>
+</head>
+<body>
+
+<div class="window">
+
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div class="traffic-lights">
+      <div class="dot red" id="dot-red" title="Community" onclick="openCommunityPanel()"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green" id="dot-green" title="Settings" onclick="openSettingsModal()" style="cursor: pointer;"></div>
+    </div>
+    <span class="titlebar-title"><span style="color: #4ec9b0; font-weight: 600; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase;">pitstop</span> · ~/tasks/index.todo</span>
+    <div class="user-chip" style="display: flex; align-items: center; gap: 8px;">
+      <img id="tb-avatar" src="" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.15); display: none;" />
+      <span id="tb-username" class="username"></span>
+      <button class="btn-logout" onclick="doLogout()">logout</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- User section -->
+    <div class="section-label">// user</div>
+    <input
+      id="user-name"
+      class="input-field"
+      type="text"
+      placeholder="enter your name..."
+      maxlength="40"
+      readonly
+    />
+
+    <div class="divider"></div>
+
+    <!-- Add task section -->
+    <div class="section-label">// add task</div>
+    <div class="add-row">
+      <input
+        id="task-input"
+        class="input-field"
+        type="text"
+        placeholder="new task description..."
+        maxlength="80"
+      />
+      <button class="btn-add" id="add-btn" onclick="addTask()">
+        <span class="checkbox-icon"></span>
+        add
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Task list section -->
+    <div class="section-label" id="tasks-label">// tasks · 0 pending</div>
+    <div class="task-list" id="task-list">
+      <div class="empty-state" id="empty-state">no tasks yet. add one above.</div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="stats-row">
+        <div class="stat">
+          <span class="stat-num green" id="stat-done">0</span>
+          <span class="stat-label">completed</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num blue" id="stat-pending">0</span>
+          <span class="stat-label">pending</span>
+        </div>
+        <div class="stats-right">
+          <span class="pct-label" id="pct-label">0% done</span>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ Community Panel ════════════════════════════════════════════════════ -->
+<div class="community-overlay" id="community-overlay" onclick="closeCommunityPanel()"></div>
+<div class="community-panel" id="community-panel">
+  <div class="cp-header">
+    <h2 id="cp-header-title">// community</h2>
+    <button class="cp-close" onclick="closeCommunityPanel()">✕</button>
+  </div>
+  
+  <!-- Community List View -->
+  <div class="cp-body" id="cp-main-view">
+    <button class="btn-create-community" id="btn-open-create" onclick="openCreateModal()">
+      + create a community
+    </button>
+    <div class="cp-communities-label">your communities</div>
+    <div id="cp-community-list"><div class="cp-empty">no communities yet.</div></div>
+  </div>
+
+  <!-- Community Leaderboard Detailed View -->
+  <div class="cp-body" id="cp-detail-view" style="display: none; flex-direction: column; height: calc(100% - 64px);">
+    <div style="flex-shrink: 0;">
+      <button class="btn-ghost" onclick="showCommunityList()" style="margin-bottom: 16px; font-size: 12px; display: inline-block;">← back to communities</button>
+      <h3 id="cp-detail-title" style="font-size: 15px; color: #4ec9b0; margin-bottom: 6px; font-weight: 500;"></h3>
+      <div id="cp-detail-meta" style="font-size: 11px; color: #555c6e; margin-bottom: 16px; line-height: 1.5;"></div>
+      
+      <!-- Community Sub-tabs -->
+      <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 18px;">
+        <button class="tab-btn active" id="cp-tab-leaderboard" onclick="switchCommunityTab('leaderboard')" style="font-size: 11px; padding: 6px 0; flex: 1;">leaderboard</button>
+        <button class="tab-btn" id="cp-tab-chat" onclick="switchCommunityTab('chat')" style="font-size: 11px; padding: 6px 0; flex: 1;">chat</button>
+        <button class="tab-btn" id="cp-tab-polls" onclick="switchCommunityTab('polls')" style="font-size: 11px; padding: 6px 0; flex: 1;">polls</button>
+        <button class="tab-btn" id="cp-tab-members" onclick="switchCommunityTab('members')" style="font-size: 11px; padding: 6px 0; flex: 1;">members</button>
+      </div>
+    </div>
+
+    <!-- Panel Content Containers -->
+    <div style="flex: 1; overflow-y: auto;">
+      <!-- Panel: Leaderboard -->
+      <div class="cp-tab-panel active" id="cp-panel-leaderboard">
+        <div class="cp-communities-label" style="margin-bottom: 12px;">// member leaderboard</div>
+        <div id="cp-leaderboard-list"></div>
+      </div>
+      
+      <!-- Panel: Chat -->
+      <div class="cp-tab-panel" id="cp-panel-chat" style="display: none; height: 100%; flex-direction: column;">
+        <div id="cp-chat-log" style="flex: 1; overflow-y: auto; background: #161b22; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; min-height: 200px; max-height: calc(100vh - 350px);"></div>
+        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+          <input id="cp-chat-input" class="input-field" type="text" placeholder="type a message..." style="font-size: 12px; padding: 8px 12px;" />
+          <button class="btn-primary" onclick="sendChatMessage()" style="width: auto; padding: 8px 16px; border-radius: 8px;">send</button>
+        </div>
+      </div>
+      
+      <!-- Panel: Polls -->
+      <div class="cp-tab-panel" id="cp-panel-polls" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div class="cp-communities-label" style="margin: 0;">// active polls</div>
+          <button class="btn-ghost" onclick="openPollModal()" style="font-size: 11px;">+ create poll</button>
+        </div>
+        <div id="cp-polls-list"></div>
+      </div>
+      
+      <!-- Panel: Members -->
+      <div class="cp-tab-panel" id="cp-panel-members" style="display: none;">
+        <div class="cp-communities-label" style="margin-bottom: 12px;">// community members</div>
+        <div id="cp-members-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Create Community Modal ════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-create">
+  <div class="modal-box">
+    <div class="modal-title">// create community</div>
+    <div class="modal-label">community name</div>
+    <input id="create-name" class="modal-input" type="text" placeholder="e.g. study group, team alpha..." maxlength="60" />
+    <div class="modal-label">invite people (press Enter or comma to add)</div>
+    <div class="email-tags" id="email-tags-box" onclick="document.getElementById('email-tags-input').focus()">
+      <input id="email-tags-input" class="email-tags-input" type="email" placeholder="email address..." />
+    </div>
+    <div class="modal-hint">Invites will be sent to the entered emails. They must have a Pitstop account to join.</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeCreateModal()">cancel</button>
+      <button class="btn-modal-ok" id="btn-create-submit" onclick="submitCreateCommunity()">create &amp; invite →</button>
+    </div>
+    <div class="modal-msg" id="create-msg"></div>
+  </div>
+</div>
+
+<!-- ══ Invite Modal (for existing community) ═════════════════════════════ -->
+<div class="modal-backdrop" id="modal-invite">
+  <div class="modal-box">
+    <div class="modal-title" id="invite-modal-title">// invite to community</div>
+    <div class="modal-label">add people (press Enter or comma to add)</div>
+    <div class="email-tags" id="invite-email-tags-box" onclick="document.getElementById('invite-email-tags-input').focus()">
+      <input id="invite-email-tags-input" class="email-tags-input" type="email" placeholder="email address..." />
+    </div>
+    <div class="modal-hint">Invites will be sent by email. The link expires in 48 hours.</div>
+    
+    <div style="margin: 16px 0; padding: 12px; background: #1c2028; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; text-align: center;">
+      <div class="modal-label" style="margin-bottom: 8px;">or share invite link directly</div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input id="direct-invite-link" class="modal-input" style="margin-bottom: 0; flex: 1; font-size: 11px; color: #8b949e; background: #0e1117;" readonly value="generating link..." onclick="this.select()" />
+        <button class="btn-ghost" onclick="copyDirectInviteLink()" style="font-size: 11px; padding: 10px 14px; text-decoration: none; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;">Copy</button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeInviteModal()">cancel</button>
+      <button class="btn-modal-ok" id="btn-invite-submit" onclick="submitInvites()">send invites →</button>
+    </div>
+    <div class="modal-msg" id="invite-msg"></div>
+  </div>
+</div>
+
+<!-- ══ Create Poll Modal ════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-poll">
+  <div class="modal-box">
+    <div class="modal-title">// create poll</div>
+    <div class="modal-label">question / topic</div>
+    <input id="poll-question" class="modal-input" type="text" placeholder="e.g. Which design do you prefer?..." maxlength="100" />
+    
+    <div class="modal-label">options</div>
+    <div id="poll-options-inputs" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+      <input class="modal-input" style="margin-bottom:0;" type="text" placeholder="Option 1" maxlength="50" />
+      <input class="modal-input" style="margin-bottom:0;" type="text" placeholder="Option 2" maxlength="50" />
+    </div>
+    <button class="btn-ghost" onclick="addPollOptionField()" style="margin-bottom: 20px; font-size: 11px;">+ add option</button>
+    
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closePollModal()">cancel</button>
+      <button class="btn-modal-ok" id="btn-poll-submit" onclick="submitCreatePoll()">create poll →</button>
+    </div>
+    <div class="modal-msg" id="poll-msg"></div>
+  </div>
+</div>
+
+<!-- ══ Settings Modal ══════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-settings">
+  <div class="modal-box" style="max-width: 440px;">
+    <div class="modal-title">// settings</div>
+    
+    <!-- Profile picture upload section -->
+    <div style="display:flex; flex-direction:column; align-items:center; margin-bottom: 20px; gap: 10px;">
+      <div style="position:relative; width: 72px; height: 72px;">
+        <img id="settings-avatar-preview" src="" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid #4ec9b0; background:#1c2028;" />
+      </div>
+      <input type="file" id="settings-avatar-input" accept="image/*" style="display:none;" onchange="handleSettingsAvatarChange(this)" />
+      <button class="btn-ghost" onclick="document.getElementById('settings-avatar-input').click()" style="font-size:11px; text-decoration:none; border:1px solid rgba(255,255,255,0.15); padding: 4px 10px; border-radius:4px;">Upload Picture</button>
+    </div>
+    
+    <!-- Edit Username -->
+    <div class="field" style="margin-bottom:14px;">
+      <div class="modal-label">your name</div>
+      <input id="settings-name" class="modal-input" type="text" placeholder="Name..." maxlength="40" style="margin-bottom:0;" />
+    </div>
+    
+    <!-- Change Password -->
+    <div style="border: 1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px; margin-bottom:18px;">
+      <div class="modal-title" style="margin-bottom:10px; font-size:11px;">// change password</div>
+      <div class="field" style="margin-bottom:10px;">
+        <div class="modal-label" style="font-size:10px;">new password</div>
+        <input id="settings-password" class="modal-input" type="password" placeholder="min. 8 characters" style="margin-bottom:0; font-size:12px; padding:8px 10px;" />
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <div class="modal-label" style="font-size:10px;">confirm new password</div>
+        <input id="settings-password-confirm" class="modal-input" type="password" placeholder="repeat password" style="margin-bottom:0; font-size:12px; padding:8px 10px;" />
+      </div>
+    </div>
+    
+    <!-- Theme Toggle -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px;">
+      <span class="modal-label" style="margin:0;">Theme</span>
+      <div style="display:flex; gap:6px;">
+        <button id="theme-btn-dark" class="btn-primary" onclick="setAppTheme('dark')" style="width:auto; padding:6px 12px; font-size:11px; border-radius:5px;">Dark</button>
+        <button id="theme-btn-light" class="btn-ghost" onclick="setAppTheme('light')" style="width:auto; padding:6px 12px; font-size:11px; border-radius:5px; text-decoration:none; border:1px solid rgba(255,255,255,0.15);">Light</button>
+      </div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeSettingsModal()">cancel</button>
+      <button class="btn-modal-ok" id="btn-settings-save" onclick="saveSettings()">save changes →</button>
+    </div>
+    <div class="modal-msg" id="settings-msg"></div>
+  </div>
+</div>
+
+<script>
+  // Redirect to backend port if accessed via static dev server (e.g. Live Server)
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if (window.location.port && window.location.port !== '3000') {
+      window.location.replace(`http://localhost:3000${window.location.pathname}${window.location.search}${window.location.hash}`);
+    }
+  }
+
+  // ── Theme Management ────────────────────────────────────────────────────────
+  function setAppTheme(theme) {
+    localStorage.setItem('app_theme', theme);
+    const body = document.body;
+    const btnDark = document.getElementById('theme-btn-dark');
+    const btnLight = document.getElementById('theme-btn-light');
+    
+    if (theme === 'light') {
+      body.classList.add('light-theme');
+      if (btnDark && btnLight) {
+        btnDark.className = 'btn-ghost';
+        btnDark.style.textDecoration = 'none';
+        btnDark.style.border = '1px solid rgba(0,0,0,0.1)';
+        btnLight.className = 'btn-primary';
+        btnLight.style.border = '1.5px solid #28c840';
+      }
+    } else {
+      body.classList.remove('light-theme');
+      if (btnDark && btnLight) {
+        btnDark.className = 'btn-primary';
+        btnDark.style.border = '1.5px solid #28c840';
+        btnLight.className = 'btn-ghost';
+        btnLight.style.textDecoration = 'none';
+        btnLight.style.border = '1px solid rgba(255,255,255,0.15)';
+      }
+    }
+  }
+
+  // ── Settings Modal Functions ───────────────────────────────────────────────
+  let selectedSettingsAvatarBase64 = null;
+
+  async function openSettingsModal() {
+    const token = localStorage.getItem('auth_token');
+    document.getElementById('modal-settings').classList.add('open');
+    document.getElementById('settings-msg').textContent = '';
+    document.getElementById('settings-msg').className = 'modal-msg';
+    
+    // Clear passwords fields
+    document.getElementById('settings-password').value = '';
+    document.getElementById('settings-password-confirm').value = '';
+    
+    // Fetch fresh user details
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const { user } = await res.json();
+      
+      document.getElementById('settings-name').value = user.name;
+      const preview = document.getElementById('settings-avatar-preview');
+      preview.src = user.profile_pic || '';
+      selectedSettingsAvatarBase64 = user.profile_pic;
+      
+      // Update theme button states
+      const savedTheme = localStorage.getItem('app_theme') || 'dark';
+      setAppTheme(savedTheme);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function closeSettingsModal() {
+    document.getElementById('modal-settings').classList.remove('open');
+  }
+
+  function handleSettingsAvatarChange(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64 = e.target.result;
+      selectedSettingsAvatarBase64 = base64;
+      document.getElementById('settings-avatar-preview').src = base64;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveSettings() {
+    const name = document.getElementById('settings-name').value.trim();
+    const password = document.getElementById('settings-password').value;
+    const confirm = document.getElementById('settings-password-confirm').value;
+    const msgEl = document.getElementById('settings-msg');
+    const btn = document.getElementById('btn-settings-save');
+    
+    if (!name) { showMsg(msgEl, 'err', 'Name is required.'); return; }
+    
+    btn.disabled = true;
+    btn.textContent = 'saving...';
+    
+    const token = localStorage.getItem('auth_token');
+    try {
+      // Step 1: Update profile (name, avatar)
+      const pRes = await fetch('/api/user/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, profilePic: selectedSettingsAvatarBase64 }),
+        credentials: 'include'
+      });
+      const pData = await pRes.json();
+      
+      if (!pRes.ok) {
+        showMsg(msgEl, 'err', pData.error || 'Failed to update profile.');
+        btn.disabled = false;
+        btn.textContent = 'save changes →';
+        return;
+      }
+      
+      // Update local storage
+      localStorage.setItem('auth_user', JSON.stringify(pData.user));
+      
+      // Update header UI
+      document.getElementById('user-name').value = pData.user.name;
+      document.getElementById('tb-username').textContent = pData.user.name;
+      
+      const avatarEl = document.getElementById('tb-avatar');
+      if (pData.user.profile_pic) {
+        avatarEl.src = pData.user.profile_pic;
+        avatarEl.style.display = 'block';
+      } else {
+        avatarEl.style.display = 'none';
+      }
+      
+      // Step 2: Change password if filled
+      if (password) {
+        if (password.length < 8) {
+          showMsg(msgEl, 'err', 'Password must be at least 8 characters.');
+          btn.disabled = false;
+          btn.textContent = 'save changes →';
+          return;
+        }
+        if (password !== confirm) {
+          showMsg(msgEl, 'err', 'Passwords do not match.');
+          btn.disabled = false;
+          btn.textContent = 'save changes →';
+          return;
+        }
+        
+        const pwdRes = await fetch('/api/user/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ password }),
+          credentials: 'include'
+        });
+        const pwdData = await pwdRes.json();
+        
+        if (!pwdRes.ok) {
+          showMsg(msgEl, 'err', pwdData.error || 'Failed to change password.');
+          btn.disabled = false;
+          btn.textContent = 'save changes →';
+          return;
+        }
+      }
+      
+      showMsg(msgEl, 'ok', '✓ Settings saved successfully!');
+      setTimeout(closeSettingsModal, 1200);
+    } catch (err) {
+      showMsg(msgEl, 'err', 'Network error.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'save changes →';
+    }
+  }
+
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+  (async () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) { window.location.href = '/auth.html'; return; }
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('unauth');
+      const { user } = await res.json();
+      // Pre-fill UI
+      document.getElementById('user-name').value    = user.name;
+      document.getElementById('tb-username').textContent = user.name;
+
+      // Load Avatar if any
+      const avatarEl = document.getElementById('tb-avatar');
+      if (user.profile_pic) {
+        avatarEl.src = user.profile_pic;
+        avatarEl.style.display = 'block';
+      } else {
+        avatarEl.style.display = 'none';
+      }
+
+      // Initialize theme
+      const savedTheme = localStorage.getItem('app_theme') || 'dark';
+      setAppTheme(savedTheme);
+      
+      // Sync/migrate local tasks to database if any exist
+      const key = `tasks_${user.email}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const localTasks = JSON.parse(saved);
+          if (localTasks && localTasks.length > 0) {
+            await fetch('/api/tasks/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ tasks: localTasks }),
+              credentials: 'include'
+            });
+          }
+        } catch (e) {
+          console.error('Failed to sync legacy tasks:', e);
+        }
+        localStorage.removeItem(key);
+      }
+
+      // Load tasks from backend database
+      await loadTasksBackend();
+    } catch {
+      localStorage.removeItem('auth_token');
+      window.location.href = '/auth.html';
+    }
+  })();
+
+  async function doLogout() {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    window.location.href = '/auth.html';
+  }
+
+  // ── Tasks ───────────────────────────────────────────────────────────────────
+  let tasks  = [];
+
+  async function loadTasksBackend() {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/tasks', {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      tasks = data.tasks || [];
+      render();
+    } catch (e) {
+      console.error('Failed to load tasks from backend:', e);
+    }
+  }
+
+  async function addTask() {
+    const input = document.getElementById('task-input');
+    const text  = input.value.trim();
+    if (!text) { input.focus(); return; }
+
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        input.value = '';
+        await loadTasksBackend();
+      }
+    } catch (e) {
+      console.error('Failed to add task:', e);
+    }
+    input.focus();
+  }
+
+  async function toggleTask(id) {
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/tasks/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, done: !t.done }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await loadTasksBackend();
+      }
+    } catch (e) {
+      console.error('Failed to toggle task:', e);
+    }
+  }
+
+  async function deleteTask(id) {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/tasks/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await loadTasksBackend();
+      }
+    } catch (e) {
+      console.error('Failed to delete task:', e);
+    }
+  }
+
+  function render() {
+    const list    = document.getElementById('task-list');
+    const empty   = document.getElementById('empty-state');
+    const label   = document.getElementById('tasks-label');
+    const done    = tasks.filter(t => t.done).length;
+    const pending = tasks.filter(t => !t.done).length;
+    const total   = tasks.length;
+    const pct     = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    document.getElementById('stat-done').textContent     = done;
+    document.getElementById('stat-pending').textContent  = pending;
+    document.getElementById('pct-label').textContent     = pct + '% done';
+    document.getElementById('progress-fill').style.width = pct + '%';
+    label.textContent = `// tasks · ${pending} pending`;
+
+    [...list.querySelectorAll('.task-item')].forEach(el => el.remove());
+
+    if (tasks.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    tasks.forEach(task => {
+      const item = document.createElement('div');
+      item.className  = 'task-item' + (task.done ? ' done' : '');
+      item.dataset.id = task.id;
+      item.innerHTML  = `
+        <div class="task-circle" onclick="toggleTask(${task.id})" title="Toggle complete"></div>
+        <span class="task-text">${escHtml(task.text)}</span>
+        <span class="badge ${task.done ? 'done' : 'todo'}">${task.done ? 'done' : 'todo'}</span>
+        <button class="btn-delete" onclick="deleteTask(${task.id})" title="Remove task">
+          <span class="cb-icon"></span>
+        </button>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('task-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  // ── Community Panel ─────────────────────────────────────────────────────────
+  function openCommunityPanel() {
+    document.getElementById('community-panel').classList.add('open');
+    document.getElementById('community-overlay').classList.add('open');
+    showCommunityList();
+  }
+  function closeCommunityPanel() {
+    document.getElementById('community-panel').classList.remove('open');
+    document.getElementById('community-overlay').classList.remove('open');
+    stopCommunityPolling();
+  }
+
+  // ── Community Detailed Tabs State ──────────────────────────────────────────
+  let activeCommunityId = null;
+  let activeCommunityName = "";
+  let activeCommunityMeta = "";
+  let activeCommunityTab = "leaderboard";
+  let communityPollInterval = null;
+
+  function stopCommunityPolling() {
+    if (communityPollInterval) {
+      clearInterval(communityPollInterval);
+      communityPollInterval = null;
+    }
+  }
+
+  function switchCommunityTab(tab) {
+    activeCommunityTab = tab;
+    stopCommunityPolling();
+    
+    // Toggle active tab buttons
+    document.querySelectorAll('#cp-detail-view .tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`cp-tab-${tab}`).classList.add('active');
+    
+    // Toggle panels
+    document.querySelectorAll('.cp-tab-panel').forEach(panel => panel.style.display = 'none');
+    
+    const panelEl = document.getElementById(`cp-panel-${tab}`);
+    if (tab === 'chat') {
+      panelEl.style.display = 'flex';
+      loadChatMessages();
+      // Poll chat messages every 3 seconds
+      communityPollInterval = setInterval(loadChatMessages, 3000);
+    } else {
+      panelEl.style.display = 'block';
+      if (tab === 'leaderboard') {
+        renderLeaderboardTab();
+      } else if (tab === 'polls') {
+        loadPolls();
+        // Poll polls every 3 seconds
+        communityPollInterval = setInterval(loadPolls, 3000);
+      } else if (tab === 'members') {
+        loadMembers();
+      }
+    }
+  }
+
+  function showCommunityList() {
+    document.getElementById('cp-header-title').textContent = '// community';
+    document.getElementById('cp-detail-view').style.display = 'none';
+    document.getElementById('cp-main-view').style.display = 'block';
+    stopCommunityPolling();
+    loadMyCommunities();
+  }
+
+  async function openCommunityLeaderboard(communityId, communityName, communityMeta) {
+    activeCommunityId = communityId;
+    activeCommunityName = communityName;
+    activeCommunityMeta = communityMeta;
+    
+    document.getElementById('cp-main-view').style.display = 'none';
+    document.getElementById('cp-detail-view').style.display = 'flex';
+    
+    switchCommunityTab('leaderboard');
+  }
+
+  // ── Chat room functions ──────────────────────────────────────────────────────
+  async function loadChatMessages() {
+    const token = localStorage.getItem('auth_token');
+    const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+    const chatLog = document.getElementById('cp-chat-log');
+    
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/messages`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const messages = data.messages || [];
+      
+      if (!messages.length) {
+        chatLog.innerHTML = '<div class="cp-empty">No messages yet. Send one below!</div>';
+        return;
+      }
+
+      // Check if user is scrolled to bottom before updating
+      const shouldScroll = chatLog.scrollHeight - chatLog.scrollTop <= chatLog.clientHeight + 40;
+      
+      chatLog.innerHTML = messages.map(m => {
+        const isSelf = m.user_email === user.email;
+        const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const avatar = m.user_profile_pic 
+          ? `<img src="${m.user_profile_pic}" style="width:16px; height:16px; border-radius:50%; object-fit:cover;" />` 
+          : `<span style="display:inline-block; width:16px; height:16px; border-radius:50%; background:#242a35; border:1px solid rgba(255,255,255,0.08);"></span>`;
+
+        return `
+          <div style="display:flex; flex-direction:column; align-items: ${isSelf ? 'flex-end' : 'flex-start'}; gap: 3px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              ${avatar}
+              <span style="font-size: 10px; color: ${isSelf ? '#4ec9b0' : '#8b949e'};">${escHtml(m.user_name)}</span>
+            </div>
+            <div style="background: ${isSelf ? '#1a4d2a' : '#1c2028'}; border: 1px solid ${isSelf ? 'rgba(40,200,64,0.2)' : 'rgba(255,255,255,0.05)'}; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 12px; color: #c9d1d9; word-break: break-word;">
+              ${escHtml(m.text)}
+            </div>
+            <span style="font-size: 9px; color: #555c6e;">${time}</span>
+          </div>
+        `;
+      }).join('');
+      
+      if (shouldScroll) {
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+    } catch (err) {
+      console.error('Failed to load chat messages:', err);
+    }
+  }
+
+  async function sendChatMessage() {
+    const input = document.getElementById('cp-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    const token = localStorage.getItem('auth_token');
+    input.value = '';
+    
+    try {
+      await fetch(`/api/communities/${activeCommunityId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text }),
+        credentials: 'include'
+      });
+      await loadChatMessages();
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  }
+
+  // ── Members tab functions ────────────────────────────────────────────────────
+  async function loadMembers() {
+    const token = localStorage.getItem('auth_token');
+    const list = document.getElementById('cp-members-list');
+    list.innerHTML = '<div class="cp-empty">loading members...</div>';
+    
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/members`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const members = data.members || [];
+      const callerIsAdmin = data.currentUserIsAdmin;
+      
+      list.innerHTML = members.map(m => {
+        const roleBadge = m.is_admin 
+          ? `<span class="badge" style="color:#febc2e; border-color:#febc2e; font-size:9px; padding:1px 6px;">admin</span>`
+          : `<span class="badge" style="color:#8b949e; border-color:#3a4150; font-size:9px; padding:1px 6px;">member</span>`;
+          
+        const promoteBtn = (callerIsAdmin && !m.is_admin) 
+          ? `<button class="btn-ghost" onclick="promoteToAdmin(${m.id})" style="font-size:10px; color:#4ec9b0; margin-left:auto; text-decoration:none; border: 1px solid rgba(78,201,176,0.3); border-radius:4px; padding:2px 8px;">make admin</button>`
+          : '';
+          
+        const avatar = m.profile_pic 
+          ? `<img src="${m.profile_pic}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; margin-right:8px;" />` 
+          : `<span style="display:inline-block; width:28px; height:28px; border-radius:50%; background:#242a35; border:1px solid rgba(255,255,255,0.08); margin-right:8px;"></span>`;
+
+        return `
+          <div class="leaderboard-item" style="padding: 10px 14px; display:flex; align-items:center;">
+            ${avatar}
+            <div class="leaderboard-info">
+              <div class="leaderboard-name" style="font-size:12px;">${escHtml(m.name)}</div>
+              <div style="font-size:10px; color:#555c6e;">${escHtml(m.email)}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+              ${roleBadge}
+              ${promoteBtn}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      list.innerHTML = '<div class="cp-empty" style="color: #ff5f57;">Failed to load members list.</div>';
+    }
+  }
+
+  async function promoteToAdmin(userId) {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/promote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await loadMembers();
+      }
+    } catch (err) {
+      console.error('Failed to promote user:', err);
+    }
+  }
+
+  // ── Polls tab functions ──────────────────────────────────────────────────────
+  async function loadPolls() {
+    const token = localStorage.getItem('auth_token');
+    const list = document.getElementById('cp-polls-list');
+    
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/polls`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const polls = data.polls || [];
+      
+      if (!polls.length) {
+        list.innerHTML = '<div class="cp-empty">No active polls. Create one above!</div>';
+        return;
+      }
+      
+      list.innerHTML = polls.map(p => {
+        const userHasVoted = p.votedOptionId !== null;
+        
+        const optionsHtml = p.options.map(o => {
+          const pct = p.totalVotes === 0 ? 0 : Math.round((o.votes / p.totalVotes) * 100);
+          const isVoted = o.id === p.votedOptionId;
+          
+          return `
+            <div onclick="votePoll(${p.id}, ${o.id})" style="position:relative; background:#1c2028; border: 1px solid ${isVoted ? '#28c840' : 'rgba(255,255,255,0.05)'}; padding: 10px 12px; border-radius: 6px; margin-bottom: 6px; cursor: pointer; overflow:hidden; font-size:12px; transition:border-color 0.2s;">
+              <div style="position:absolute; left:0; top:0; bottom:0; width:${pct}%; background:rgba(40,200,64,0.08); transition:width 0.3s;"></div>
+              <div style="position:relative; display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:${isVoted ? '#28c840' : '#c9d1d9'}; font-weight:${isVoted ? '600' : '400'};">
+                  ${isVoted ? '✓ ' : ''}${escHtml(o.option_text)}
+                </span>
+                <span style="font-size:11px; color:#8b949e;">${o.votes} vote${o.votes !== 1 ? 's' : ''} (${pct}%)</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        return `
+          <div style="background:#161b22; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+            <div style="font-size:11px; color:#555c6e; margin-bottom: 4px;">Created by ${escHtml(p.creator_name)}</div>
+            <div style="font-size:13px; font-weight:600; color:#c9d1d9; margin-bottom: 12px;">${escHtml(p.question)}</div>
+            <div>${optionsHtml}</div>
+            <div style="font-size:11px; color:#555c6e; margin-top:8px; text-align:right;">Total votes: ${p.totalVotes}</div>
+          </div>
+        `;
+      }).join('');
+      
+    } catch (err) {
+      list.innerHTML = '<div class="cp-empty" style="color:#ff5f57;">Failed to load polls.</div>';
+    }
+  }
+
+  async function votePoll(pollId, optionId) {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/polls/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ pollId, optionId }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await loadPolls();
+      }
+    } catch (err) {
+      console.error('Failed to vote:', err);
+    }
+  }
+
+  function openPollModal() {
+    document.getElementById('modal-poll').classList.add('open');
+    document.getElementById('poll-question').value = '';
+    document.getElementById('poll-msg').textContent = '';
+    document.getElementById('poll-msg').className = 'modal-msg';
+    
+    // Reset options input fields
+    document.getElementById('poll-options-inputs').innerHTML = `
+      <input class="modal-input" style="margin-bottom:0;" type="text" placeholder="Option 1" maxlength="50" />
+      <input class="modal-input" style="margin-bottom:0;" type="text" placeholder="Option 2" maxlength="50" />
+    `;
+    setTimeout(() => document.getElementById('poll-question').focus(), 50);
+  }
+
+  function closePollModal() {
+    document.getElementById('modal-poll').classList.remove('open');
+  }
+
+  function addPollOptionField() {
+    const container = document.getElementById('poll-options-inputs');
+    const count = container.querySelectorAll('input').length;
+    if (count >= 5) {
+      alert("Maximum 5 options allowed.");
+      return;
+    }
+    const input = document.createElement('input');
+    input.className = 'modal-input';
+    input.style.marginBottom = '0';
+    input.type = 'text';
+    input.placeholder = `Option ${count + 1}`;
+    input.maxLength = 50;
+    container.appendChild(input);
+    input.focus();
+  }
+
+  async function submitCreatePoll() {
+    const question = document.getElementById('poll-question').value.trim();
+    const msgEl = document.getElementById('poll-msg');
+    const btn = document.getElementById('btn-poll-submit');
+    
+    const inputs = document.getElementById('poll-options-inputs').querySelectorAll('input');
+    const options = [...inputs].map(i => i.value.trim()).filter(val => val !== '');
+    
+    if (!question) { showMsg(msgEl, 'err', 'Please enter a question.'); return; }
+    if (options.length < 2) { showMsg(msgEl, 'err', 'Add at least 2 non-empty options.'); return; }
+    
+    btn.disabled = true;
+    btn.textContent = 'creating...';
+    
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ question, options }),
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showMsg(msgEl, 'ok', '✓ Poll created successfully!');
+        loadPolls();
+        setTimeout(closePollModal, 1200);
+      } else {
+        showMsg(msgEl, 'err', data.error || 'Failed to create poll.');
+      }
+    } catch {
+      showMsg(msgEl, 'err', 'Network error.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'create poll →';
+    }
+  }
+
+  async function renderLeaderboardTab() {
+    const token = localStorage.getItem('auth_token');
+    const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+    
+    document.getElementById('cp-header-title').textContent = `// community / leaderboard`;
+    document.getElementById('cp-detail-title').textContent = activeCommunityName;
+    document.getElementById('cp-detail-meta').textContent = activeCommunityMeta;
+    
+    const list = document.getElementById('cp-leaderboard-list');
+    list.innerHTML = '<div class="cp-empty">loading leaderboard...</div>';
+    
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/leaderboard`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      
+      const leaderboard = data.leaderboard || [];
+      if (!leaderboard.length) {
+        list.innerHTML = '<div class="cp-empty">No members in this community.</div>';
+        return;
+      }
+      
+      list.innerHTML = leaderboard.map((m, index) => {
+        const isSelf = m.email === user.email;
+        const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+        const rankText = index === 0 ? '👑' : `${index + 1}`;
+        
+        const avatar = m.profile_pic 
+          ? `<img src="${m.profile_pic}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; margin-right:8px;" />` 
+          : `<span style="display:inline-block; width:24px; height:24px; border-radius:50%; background:#242a35; border:1px solid rgba(255,255,255,0.08); margin-right:8px;"></span>`;
+
+        return `
+          <div class="leaderboard-item ${isSelf ? 'self' : ''}" style="display:flex; align-items:center;">
+            <div class="leaderboard-rank ${rankClass}">${rankText}</div>
+            ${avatar}
+            <div class="leaderboard-info">
+              <div class="leaderboard-name">${escHtml(m.name)}</div>
+              <div class="leaderboard-stats">${m.completed_tasks}/${m.total_tasks} task${m.total_tasks !== 1 ? 's' : ''} completed</div>
+            </div>
+            <div class="leaderboard-progress-container">
+              <div class="leaderboard-progress-track">
+                <div class="leaderboard-progress-fill" style="width: ${m.percentage}%"></div>
+              </div>
+              <div class="leaderboard-pct">${m.percentage}%</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+    } catch (err) {
+      list.innerHTML = '<div class="cp-empty" style="color: #ff5f57;">Failed to load leaderboard.</div>';
+    }
+  }
+
+  async function loadMyCommunities() {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/communities/mine', {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      renderCommunityList(data.communities || []);
+    } catch { /* silent */ }
+  }
+
+  function renderCommunityList(communities) {
+    const list = document.getElementById('cp-community-list');
+    if (!communities.length) {
+      list.innerHTML = '<div class="cp-empty">no communities yet.</div>';
+      return;
+    }
+    list.innerHTML = communities.map(c => `
+      <div class="cp-community-card" style="cursor: pointer;" onclick="openCommunityLeaderboard(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}', '${c.member_count} member${c.member_count !== 1 ? 's' : ''} · ${c.members.map(m => escHtml(m.name)).join(', ').replace(/'/g, "\\'")}')">
+        <div class="cp-community-card-name" style="font-weight: 500;">${escHtml(c.name)}</div>
+        <div class="cp-community-card-meta">${c.member_count} member${c.member_count !== 1 ? 's' : ''} · ${
+          c.members.map(m => escHtml(m.name)).join(', ')
+        }</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+          <span style="font-size: 11px; color: #4ec9b0; text-decoration: underline; text-underline-offset: 2px;">View Leaderboard →</span>
+          <button class="btn-invite-member" onclick="event.stopPropagation(); openInviteModal(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}')">+ invite people</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Email tag input helper ──────────────────────────────────────────────────
+  function makeTagInput(inputId, tagBoxId) {
+    const input = document.getElementById(inputId);
+    const box   = document.getElementById(tagBoxId);
+    const emails = [];
+
+    function addEmail(raw) {
+      const email = raw.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+      if (emails.includes(email)) return;
+      emails.push(email);
+      const tag = document.createElement('div');
+      tag.className = 'email-tag';
+      tag.dataset.email = email;
+      tag.innerHTML = `<span>${escHtml(email)}</span><span class="email-tag-remove" onclick="this.parentElement.remove();emails_${inputId}.splice(emails_${inputId}.indexOf('${email}'),1)">×</span>`;
+      box.insertBefore(tag, input);
+    }
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        addEmail(input.value);
+        input.value = '';
+      }
+      if (e.key === 'Backspace' && !input.value) {
+        const tags = box.querySelectorAll('.email-tag');
+        if (tags.length) {
+          const last = tags[tags.length - 1];
+          emails.splice(emails.indexOf(last.dataset.email), 1);
+          last.remove();
+        }
+      }
+    });
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) { addEmail(input.value); input.value = ''; }
+    });
+
+    return { getEmails: () => [...emails], clear: () => { emails.length = 0; box.querySelectorAll('.email-tag').forEach(t => t.remove()); input.value = ''; } };
+  }
+
+  let createTagHelper, inviteTagHelper;
+
+  // ── Create Community Modal ──────────────────────────────────────────────────
+  function openCreateModal() {
+    document.getElementById('modal-create').classList.add('open');
+    document.getElementById('create-name').value = '';
+    document.getElementById('create-msg').textContent = '';
+    document.getElementById('create-msg').className = 'modal-msg';
+    if (!createTagHelper) createTagHelper = makeTagInput('email-tags-input', 'email-tags-box');
+    else createTagHelper.clear();
+    setTimeout(() => document.getElementById('create-name').focus(), 50);
+  }
+  function closeCreateModal() {
+    document.getElementById('modal-create').classList.remove('open');
+  }
+
+  async function submitCreateCommunity() {
+    const name = document.getElementById('create-name').value.trim();
+    const msgEl = document.getElementById('create-msg');
+    const btn   = document.getElementById('btn-create-submit');
+    if (!name) { showMsg(msgEl, 'err', 'Please enter a community name.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'creating...';
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      // Step 1: create
+      const cRes = await fetch('/api/communities/create', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name }),
+      });
+      const cData = await cRes.json();
+      if (!cRes.ok) { showMsg(msgEl, 'err', cData.error || 'Failed to create community.'); return; }
+
+      const communityId = cData.community.id;
+
+      // Step 2: send invites if any emails
+      const emails = createTagHelper ? createTagHelper.getEmails() : [];
+      if (emails.length) {
+        btn.textContent = 'sending invites...';
+        const iRes = await fetch('/api/communities/invite', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ communityId, emails }),
+        });
+        const iData = await iRes.json();
+        const failed = (iData.results || []).filter(r => r.status === 'failed').map(r => r.email);
+        if (failed.length) {
+          showMsg(msgEl, 'err', `Community created! Failed to send invite to: ${failed.join(', ')}`);
+        } else {
+          showMsg(msgEl, 'ok', `✓ Community "${name}" created & ${emails.length} invite${emails.length > 1 ? 's' : ''} sent!`);
+        }
+      } else {
+        showMsg(msgEl, 'ok', `✓ Community "${name}" created!`);
+      }
+
+      loadMyCommunities();
+      setTimeout(closeCreateModal, 1800);
+    } catch (err) {
+      showMsg(msgEl, 'err', 'Network error. Please try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'create & invite →';
+    }
+  }
+
+  // ── Invite Modal (existing community) ──────────────────────────────────────
+  let activeInviteCommunityId = null;
+
+  async function openInviteModal(communityId, communityName) {
+    activeInviteCommunityId = communityId;
+    document.getElementById('invite-modal-title').textContent = `// invite to "${communityName}"`;
+    document.getElementById('invite-msg').textContent = '';
+    document.getElementById('invite-msg').className = 'modal-msg';
+    document.getElementById('modal-invite').classList.add('open');
+    if (!inviteTagHelper) inviteTagHelper = makeTagInput('invite-email-tags-input', 'invite-email-tags-box');
+    else inviteTagHelper.clear();
+    
+    const linkInput = document.getElementById('direct-invite-link');
+    linkInput.value = "generating link...";
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`/api/communities/${communityId}/direct-invite`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.directLink) {
+        linkInput.value = data.directLink;
+      } else {
+        linkInput.value = "Failed to generate link.";
+      }
+    } catch {
+      linkInput.value = "Error generating link.";
+    }
+
+    setTimeout(() => document.getElementById('invite-email-tags-input').focus(), 50);
+  }
+
+  function copyDirectInviteLink() {
+    const input = document.getElementById('direct-invite-link');
+    if (!input || input.value.startsWith('generating') || input.value.startsWith('Error') || input.value.startsWith('Failed')) {
+      return;
+    }
+    
+    input.select();
+    input.setSelectionRange(0, 99999);
+    
+    navigator.clipboard.writeText(input.value).then(() => {
+      const msgEl = document.getElementById('invite-msg');
+      showMsg(msgEl, 'ok', '✓ Direct invite link copied to clipboard!');
+    }).catch(() => {
+      alert("Failed to copy link. Please manually copy the text.");
+    });
+  }
+  function closeInviteModal() {
+    document.getElementById('modal-invite').classList.remove('open');
+    activeInviteCommunityId = null;
+  }
+
+  async function submitInvites() {
+    const msgEl = document.getElementById('invite-msg');
+    const btn   = document.getElementById('btn-invite-submit');
+    const emails = inviteTagHelper ? inviteTagHelper.getEmails() : [];
+    if (!emails.length) { showMsg(msgEl, 'err', 'Add at least one email.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'sending...';
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/communities/invite', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ communityId: activeInviteCommunityId, emails }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg(msgEl, 'err', data.error || 'Failed.'); return; }
+
+      const failed = (data.results || []).filter(r => r.status === 'failed').map(r => r.email);
+      if (failed.length) {
+        showMsg(msgEl, 'err', `Sent some. Failed: ${failed.join(', ')}`);
+      } else {
+        showMsg(msgEl, 'ok', `✓ Invite${emails.length > 1 ? 's' : ''} sent to ${emails.join(', ')}`);
+        setTimeout(closeInviteModal, 1800);
+      }
+    } catch {
+      showMsg(msgEl, 'err', 'Network error.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'send invites →';
+    }
+  }
+
+  function showMsg(el, type, text) {
+    el.className = `modal-msg ${type}`;
+    el.textContent = text;
+  }
+
+  // Send message on Enter key inside chat input
+  document.getElementById('cp-chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendChatMessage();
+  });
+
+  // Close modals on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeCreateModal();
+      closeInviteModal();
+      closePollModal();
+    }
+  });
+</script>
+
+</body>
+</html>
