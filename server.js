@@ -13,7 +13,7 @@ const cookieParser = require('cookie-parser');
 const PORT       = process.env.PORT       || 3000;
 const BASE_URL   = process.env.BASE_URL   || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_dev_secret_change_me';
-const JWT_EXPIRY = '7d';
+const JWT_EXPIRY = '365d';
 // On Railway/cloud the app dir may be read-only; use /tmp for the DB
 const DB_PATH    = process.env.DB_PATH || path.join(__dirname, 'db.sqlite');
 
@@ -330,7 +330,7 @@ app.post('/api/auth/complete-signup', async (req, res) => {
   const user  = dbGet('SELECT id, name, email FROM users WHERE email = ?', [email]);
   const token = jwt.sign({ id: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 
-  res.cookie('token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+  res.cookie('token', token, { httpOnly: true, maxAge: 365 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
   res.json({ message: 'Account created.', token, user: { name: user.name, email: user.email } });
 });
 
@@ -347,7 +347,7 @@ app.post('/api/auth/login', async (req, res) => {
   if (!valid) return res.status(401).json({ error: 'Incorrect password.' });
 
   const token = jwt.sign({ id: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
-  res.cookie('token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
+  res.cookie('token', token, { httpOnly: true, maxAge: 365 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
   res.json({ message: 'Logged in.', token, user: { name: user.name, email: user.email, profile_pic: user.profile_pic } });
 });
 
