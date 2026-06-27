@@ -739,6 +739,74 @@ app.post('/api/communities/:id/promote', requireAuth, (req, res) => {
   res.json({ message: 'Member promoted to admin.' });
 });
 
+// ── 7b. Exit community ──────────────────────────────────────────────────────────
+app.post('/api/communities/:id/leave', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const community = dbGet('SELECT owner_id FROM communities WHERE id = ?', [communityId]);
+  if (!community) return res.status(404).json({ error: 'Community not found.' });
+
+  if (community.owner_id === req.user.id) {
+    return res.status(400).json({ error: 'As the owner, you cannot leave the community. Delete the community instead.' });
+  }
+
+  const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(400).json({ error: 'You are not a member of this community.' });
+
+  dbRun('DELETE FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  res.json({ message: 'Left community successfully.' });
+});
+
+// ── 7c. Delete community ────────────────────────────────────────────────────────
+app.post('/api/communities/:id/delete', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const community = dbGet('SELECT owner_id FROM communities WHERE id = ?', [communityId]);
+  if (!community) return res.status(404).json({ error: 'Community not found.' });
+
+  if (community.owner_id !== req.user.id) {
+    return res.status(403).json({ error: 'Only the community owner can delete it.' });
+  }
+
+  // Delete all associations
+  dbRun('DELETE FROM poll_options WHERE poll_id IN (SELECT id FROM polls WHERE community_id = ?)', [communityId]);
+  dbRun('DELETE FROM poll_votes WHERE poll_id IN (SELECT id FROM polls WHERE community_id = ?)', [communityId]);
+  dbRun('DELETE FROM polls WHERE community_id = ?', [communityId]);
+  dbRun('DELETE FROM messages WHERE community_id = ?', [communityId]);
+  dbRun('DELETE FROM community_invites WHERE community_id = ?', [communityId]);
+  dbRun('DELETE FROM community_members WHERE community_id = ?', [communityId]);
+  dbRun('DELETE FROM communities WHERE id = ?', [communityId]);
+
+  res.json({ message: 'Community deleted successfully.' });
+});
+
+// ── 7d. Remove member (kick) ────────────────────────────────────────────────────
+app.post('/api/communities/:id/remove-member', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'User ID is required.' });
+
+  const community = dbGet('SELECT owner_id FROM communities WHERE id = ?', [communityId]);
+  if (!community) return res.status(404).json({ error: 'Community not found.' });
+
+  // Caller must be an admin
+  const caller = dbGet('SELECT is_admin FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!caller || !caller.is_admin) {
+    return res.status(403).json({ error: 'Only admins can remove members.' });
+  }
+
+  // Cannot remove owner
+  if (community.owner_id === userId) {
+    return res.status(400).json({ error: 'Cannot remove the community owner.' });
+  }
+
+  // Cannot remove oneself
+  if (req.user.id === userId) {
+    return res.status(400).json({ error: 'Use the exit community option to leave.' });
+  }
+
+  dbRun('DELETE FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, userId]);
+  res.json({ message: 'Member removed successfully.' });
+});
+
 // ── 8. List polls ──────────────────────────────────────────────────────────────
 app.get('/api/communities/:id/polls', requireAuth, (req, res) => {
   const communityId = req.params.id;
