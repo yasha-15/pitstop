@@ -180,8 +180,6 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: 2000,
-  greetingTimeout: 2000,
   tls: {
     rejectUnauthorized: false
   }
@@ -280,12 +278,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
     res.json({ message: 'OTP sent successfully.' });
   } catch (err) {
     console.error('Email error:', err.message);
-    console.log(`\n\n[DEV BYPASS] OTP for ${emailLower} is: ${otp}\n\n`);
-    res.json({ 
-      message: 'OTP sent (Dev Bypass Mode).', 
-      devOtp: otp,
-      warning: 'Gmail SMTP timed out. Using developer OTP bypass.' 
-    });
+    res.status(500).json({ error: 'Failed to send email. Check your .env EMAIL_USER and EMAIL_PASS.' });
   }
 });
 
@@ -387,16 +380,12 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
   try {
     await sendMail({ to: emailLower, subject: 'Reset your Pitstop password', html: resetEmailHtml(resetUrl) });
-    res.json({ message: 'If an account exists, a reset link has been sent.' });
   } catch (err) {
     console.error('Email error:', err.message);
-    console.log(`\n\n[DEV BYPASS] Reset URL: ${resetUrl}\n\n`);
-    res.json({ 
-      message: 'If an account exists, a reset link has been sent.', 
-      devResetUrl: resetUrl,
-      warning: 'Gmail SMTP timed out. Using developer reset bypass.'
-    });
+    return res.status(500).json({ error: 'Failed to send reset email. Check your credentials.' });
   }
+
+  res.json({ message: 'If an account exists, a reset link has been sent.' });
 });
 
 // ── 6. Reset password ─────────────────────────────────────────────────────────
