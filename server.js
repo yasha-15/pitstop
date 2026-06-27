@@ -171,27 +171,21 @@ function dbAll(sql, params = []) {
   return rows;
 }
 
-// ─── Email transporter ────────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
-
+// ─── Email transporter (Google Apps Script HTTP Relay) ─────────────────────────
 async function sendMail({ to, subject, html }) {
-  await transporter.sendMail({
-    from: `"Pitstop" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html,
+  const url = process.env.EMAIL_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbyHfk49kHS3JjB28jCLb6hsnOjCJml5AGdh8L-XdPSDCca9K9j4pY1bwWymmxC3tdE/exec';
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to, subject, html })
   });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  const result = await response.json();
+  if (result.status !== 'success') {
+    throw new Error(result.error || 'Failed to send email via Apps Script relay.');
+  }
 }
 
 // ─── Email templates ──────────────────────────────────────────────────────────
