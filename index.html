@@ -27,7 +27,7 @@
 
     .window {
       width: 100%;
-      max-width: 680px;
+      max-width: 620px;
       background: #111318;
       border-radius: 14px;
       box-shadow:
@@ -42,7 +42,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 18px;
+      padding: 10px 14px;
       background: #161920;
       border-bottom: 1px solid rgba(255,255,255,0.05);
       user-select: none;
@@ -97,14 +97,14 @@
 
     /* ── Main body ── */
     .body {
-      padding: 28px 28px 24px;
+      padding: 20px 24px 18px;
     }
 
     /* ── Section label ── */
     .section-label {
-      font-size: 13px;
+      font-size: 11px;
       color: #4ec9b0;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       letter-spacing: 0.01em;
     }
 
@@ -114,9 +114,9 @@
       background: #1c2028;
       border: 1px solid rgba(255,255,255,0.07);
       border-radius: 8px;
-      padding: 14px 16px;
+      padding: 10px 12px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
+      font-size: 12px;
       color: #c9d1d9;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
@@ -142,13 +142,13 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 14px 18px;
+      padding: 10px 14px;
       background: #1c2028;
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 8px;
       color: #c9d1d9;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
+      font-size: 12px;
       cursor: pointer;
       white-space: nowrap;
       transition: background 0.2s, border-color 0.2s;
@@ -158,8 +158,8 @@
       border-color: rgba(255,255,255,0.18);
     }
     .btn-add .checkbox-icon {
-      width: 13px;
-      height: 13px;
+      width: 12px;
+      height: 12px;
       border: 1.5px solid #555c6e;
       border-radius: 3px;
       flex-shrink: 0;
@@ -169,7 +169,7 @@
     .divider {
       height: 1px;
       background: rgba(255,255,255,0.05);
-      margin: 24px 0;
+      margin: 18px 0;
     }
 
     /* ── Task list ── */
@@ -182,11 +182,11 @@
     .task-item {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       background: #161b22;
       border: 1px solid rgba(255,255,255,0.05);
       border-radius: 8px;
-      padding: 14px 16px;
+      padding: 10px 12px;
       transition: border-color 0.2s, background 0.2s;
       animation: slideIn 0.25s ease;
     }
@@ -202,8 +202,8 @@
 
     /* circle toggle */
     .task-circle {
-      width: 22px;
-      height: 22px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       border: 1.5px solid #3a4150;
       flex-shrink: 0;
@@ -221,8 +221,8 @@
     }
     .task-item.done .task-circle::after {
       content: '';
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #28c840;
       display: block;
@@ -230,7 +230,7 @@
 
     .task-text {
       flex: 1;
-      font-size: 14px;
+      font-size: 12px;
       color: #c9d1d9;
       letter-spacing: 0.01em;
     }
@@ -242,8 +242,8 @@
 
     /* badge */
     .badge {
-      font-size: 11px;
-      padding: 3px 10px;
+      font-size: 10px;
+      padding: 2px 8px;
       border-radius: 99px;
       border: 1.5px solid;
       letter-spacing: 0.04em;
@@ -254,8 +254,8 @@
 
     /* delete button */
     .btn-delete {
-      width: 34px;
-      height: 34px;
+      width: 28px;
+      height: 28px;
       background: #1c2028;
       border: 1px solid rgba(255,255,255,0.09);
       border-radius: 6px;
@@ -271,8 +271,8 @@
       border-color: rgba(255, 80, 80, 0.35);
     }
     .btn-delete .cb-icon {
-      width: 11px;
-      height: 11px;
+      width: 10px;
+      height: 10px;
       border: 1.5px solid #555c6e;
       border-radius: 2px;
       transition: border-color 0.2s;
@@ -289,15 +289,15 @@
 
     /* ── Footer ── */
     .footer {
-      margin-top: 24px;
-      padding-top: 18px;
+      margin-top: 18px;
+      padding-top: 14px;
       border-top: 1px solid rgba(255,255,255,0.05);
     }
 
     .stats-row {
       display: flex;
       align-items: flex-end;
-      gap: 28px;
+      gap: 20px;
       margin-bottom: 14px;
     }
 
@@ -308,7 +308,7 @@
     }
 
     .stat-num {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 600;
       line-height: 1;
     }
@@ -316,7 +316,7 @@
     .stat-num.blue   { color: #4d9fec; }
 
     .stat-label {
-      font-size: 11px;
+      font-size: 10px;
       color: #555c6e;
       letter-spacing: 0.04em;
     }
@@ -359,8 +359,66 @@
 
     /* ── Responsive ── */
     @media (max-width: 520px) {
-      .body { padding: 20px 16px 18px; }
-      .progress-bar-track { width: 100px; }
+      body { padding: 12px; }
+      .body { padding: 16px 14px; }
+      .titlebar { padding: 10px 14px; }
+      .titlebar-title { font-size: 11px; }
+      .user-chip { font-size: 10px; gap: 6px; }
+      .btn-logout { padding: 2px 6px; font-size: 10px; }
+      .section-label { font-size: 11px; margin-bottom: 8px; }
+      .input-field { padding: 10px 12px; font-size: 12px; }
+      .btn-add { padding: 10px 14px; font-size: 12px; }
+      .task-item { padding: 10px 12px; gap: 10px; }
+      .task-text { font-size: 12px; }
+      .badge { font-size: 10px; padding: 2px 8px; }
+      .btn-delete { width: 28px; height: 28px; }
+      .divider { margin: 16px 0; }
+      .progress-bar-track { width: 80px; }
+      .pct-label { font-size: 11px; }
+      .stat-num { font-size: 20px; }
+      .stat-label { font-size: 10px; }
+      
+      .community-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-left: none;
+      }
+      .cp-header { padding: 12px 16px; }
+      .cp-body { padding: 16px; }
+      .leaderboard-item {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 12px;
+      }
+      .leaderboard-name { font-size: 11px; }
+      .leaderboard-stats { font-size: 10px; }
+      .leaderboard-progress-container {
+        width: 100%;
+        margin-top: 4px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(255,255,255,0.03);
+      }
+      body.light-theme .leaderboard-progress-container {
+        border-top-color: rgba(0,0,0,0.04);
+      }
+      .member-actions {
+        width: 100%;
+        margin-top: 4px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(255,255,255,0.03);
+        justify-content: flex-end;
+      }
+      body.light-theme .member-actions {
+        border-top-color: rgba(0,0,0,0.04);
+      }
+      .add-row {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .btn-add {
+        justify-content: center;
+        width: 100%;
+      }
     }
 
     /* ══ Community Panel ══════════════════════════════════════════════════ */
@@ -816,6 +874,38 @@
     body.light-theme #cp-chat-log {
       background: #fafbfc;
       border-color: rgba(0,0,0,0.06);
+    }
+
+    /* Member actions classes */
+    .member-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .member-actions .btn-ghost {
+      font-size: 10px;
+      text-decoration: none !important;
+      border-radius: 4px;
+      padding: 2px 8px;
+      line-height: 1.4;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .member-actions .btn-promote {
+      color: #4ec9b0;
+      border: 1px solid rgba(78,201,176,0.3);
+    }
+    .member-actions .btn-promote:hover {
+      background: rgba(78,201,176,0.1);
+      border-color: #4ec9b0;
+    }
+    .member-actions .btn-remove {
+      color: #ff5f57;
+      border: 1px solid rgba(255,95,87,0.3);
+    }
+    .member-actions .btn-remove:hover {
+      background: rgba(255,95,87,0.1);
+      border-color: #ff5f57;
     }
   </style>
 </head>
@@ -1636,13 +1726,13 @@
           : `<span class="badge" style="color:#8b949e; border-color:#3a4150; font-size:9px; padding:1px 6px;">member</span>`;
           
         const promoteBtn = (callerIsAdmin && !m.is_admin) 
-          ? `<button class="btn-ghost" onclick="promoteToAdmin(${m.id})" style="font-size:10px; color:#4ec9b0; margin-left:auto; text-decoration:none; border: 1px solid rgba(78,201,176,0.3); border-radius:4px; padding:2px 8px;">make admin</button>`
+          ? `<button class="btn-ghost btn-promote" onclick="promoteToAdmin(${m.id})">make admin</button>`
           : '';
           
         const isSelf = m.id === user.id;
         const isOwner = m.id === activeCommunityOwnerId;
         const removeBtn = (callerIsAdmin && !isSelf && !isOwner)
-          ? `<button class="btn-ghost" onclick="removeMember(${m.id}, '${escHtml(m.name).replace(/'/g, "\\'")}')" style="font-size:10px; color:#ff5f57; margin-left:8px; text-decoration:none; border: 1px solid rgba(255,95,87,0.3); border-radius:4px; padding:2px 8px;">remove</button>`
+          ? `<button class="btn-ghost btn-remove" onclick="removeMember(${m.id}, '${escHtml(m.name).replace(/'/g, "\\'")}')">remove</button>`
           : '';
           
         const avatar = m.profile_pic 
@@ -1656,7 +1746,7 @@
               <div class="leaderboard-name" style="font-size:12px;">${escHtml(m.name)}</div>
               <div style="font-size:10px; color:#555c6e;">${escHtml(m.email)}</div>
             </div>
-            <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+            <div class="member-actions">
               ${roleBadge}
               ${promoteBtn}
               ${removeBtn}
