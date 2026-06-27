@@ -278,7 +278,12 @@ app.post('/api/auth/send-otp', async (req, res) => {
     res.json({ message: 'OTP sent successfully.' });
   } catch (err) {
     console.error('Email error:', err.message);
-    res.status(500).json({ error: 'Failed to send email. Check your .env EMAIL_USER and EMAIL_PASS.' });
+    console.log(`\n\n[DEV BYPASS] OTP for ${emailLower} is: ${otp}\n\n`);
+    res.json({ 
+      message: 'OTP sent (Dev Bypass Mode).', 
+      devOtp: otp,
+      warning: 'Gmail SMTP timed out. Using developer OTP bypass.' 
+    });
   }
 });
 
@@ -373,15 +378,23 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   dbRun('UPDATE reset_tokens SET used = 1 WHERE user_id = ?', [user.id]);
   dbRun('INSERT INTO reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)', [user.id, token, expires]);
 
-  const resetUrl = `${BASE_URL}/reset-password.html?token=${token}`;
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const reqBaseUrl = `${protocol}://${host}`;
+  const resetUrl = `${reqBaseUrl}/reset-password.html?token=${token}`;
+
   try {
     await sendMail({ to: emailLower, subject: 'Reset your Pitstop password', html: resetEmailHtml(resetUrl) });
+    res.json({ message: 'If an account exists, a reset link has been sent.' });
   } catch (err) {
     console.error('Email error:', err.message);
-    return res.status(500).json({ error: 'Failed to send reset email. Check your .env credentials.' });
+    console.log(`\n\n[DEV BYPASS] Reset URL: ${resetUrl}\n\n`);
+    res.json({ 
+      message: 'If an account exists, a reset link has been sent.', 
+      devResetUrl: resetUrl,
+      warning: 'Gmail SMTP timed out. Using developer reset bypass.'
+    });
   }
-
-  res.json({ message: 'If an account exists, a reset link has been sent.' });
 });
 
 // ── 6. Reset password ─────────────────────────────────────────────────────────
