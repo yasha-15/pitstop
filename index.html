@@ -1655,7 +1655,13 @@
       
       chatLog.innerHTML = messages.map(m => {
         const isSelf = m.user_email === user.email;
-        const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        let msgDateStr = m.created_at;
+        if (msgDateStr && !msgDateStr.includes('T') && !msgDateStr.includes('Z')) {
+          // SQLite datetime('now') returns "YYYY-MM-DD HH:MM:SS" in UTC.
+          // Replace space with 'T' and append 'Z' so browsers parse it as UTC.
+          msgDateStr = msgDateStr.replace(' ', 'T') + 'Z';
+        }
+        const time = new Date(msgDateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         const avatar = m.user_profile_pic 
           ? `<img src="${m.user_profile_pic}" style="width:16px; height:16px; border-radius:50%; object-fit:cover;" />` 

@@ -906,7 +906,7 @@ app.post('/api/communities/:id/messages', requireAuth, (req, res) => {
   const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
   if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
 
-  dbRun('INSERT INTO messages (community_id, user_id, text) VALUES (?, ?, ?)', [communityId, req.user.id, text.trim()]);
+  dbRun('INSERT INTO messages (community_id, user_id, text, created_at) VALUES (?, ?, ?, ?)', [communityId, req.user.id, text.trim(), new Date().toISOString()]);
   res.json({ message: 'Message posted.' });
 });
 
