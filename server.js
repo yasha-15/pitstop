@@ -80,7 +80,58 @@ async function initDb() {
       expires_at   DATETIME NOT NULL,
       used         INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS tasks (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id     INTEGER NOT NULL,
+      text        TEXT    NOT NULL,
+      done        INTEGER NOT NULL DEFAULT 0,
+      created_at  DATETIME DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS polls (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      community_id INTEGER NOT NULL,
+      creator_id   INTEGER NOT NULL,
+      question     TEXT NOT NULL,
+      created_at   DATETIME DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS poll_options (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      poll_id   INTEGER NOT NULL,
+      option_text TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS poll_votes (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      poll_id   INTEGER NOT NULL,
+      option_id INTEGER NOT NULL,
+      user_id   INTEGER NOT NULL,
+      UNIQUE(poll_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      community_id INTEGER NOT NULL,
+      user_id      INTEGER NOT NULL,
+      text         TEXT NOT NULL,
+      created_at   DATETIME DEFAULT (datetime('now'))
+    );
   `);
+
+  // Dynamically add columns if they don't exist
+  try {
+    db.run('ALTER TABLE community_members ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0');
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    db.run('ALTER TABLE users ADD COLUMN profile_pic TEXT');
+  } catch (e) {
+    // Column already exists
+  }
 
   saveDb();
   console.log('  ✓  Database ready');
@@ -190,7 +241,7 @@ function requireAuth(req, res, next) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.static(__dirname));
 
@@ -298,7 +349,7 @@ app.post('/api/auth/login', async (req, res) => {
 
   const token = jwt.sign({ id: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
   res.cookie('token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
-  res.json({ message: 'Logged in.', token, user: { name: user.name, email: user.email } });
+  res.json({ message: 'Logged in.', token, user: { name: user.name, email: user.email, profile_pic: user.profile_pic } });
 });
 
 // ── 5. Forgot password ────────────────────────────────────────────────────────
@@ -347,7 +398,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
 // ── 7. Me (auth check) ────────────────────────────────────────────────────────
 app.get('/api/auth/me', requireAuth, (req, res) => {
-  const user = dbGet('SELECT id, name, email FROM users WHERE id = ?', [req.user.id]);
+  const user = dbGet('SELECT id, name, email, profile_pic FROM users WHERE id = ?', [req.user.id]);
   if (!user) return res.status(404).json({ error: 'User not found.' });
   res.json({ user });
 });
@@ -356,6 +407,74 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 app.post('/api/auth/logout', (_req, res) => {
   res.clearCookie('token');
   res.json({ message: 'Logged out.' });
+});
+
+// ── 9. Update profile (name, avatar) ───────────────────────────────────────────
+app.post('/api/user/update-profile', requireAuth, (req, res) => {
+  const { name, profilePic } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Name is required.' });
+
+  dbRun('UPDATE users SET name = ?, profile_pic = ? WHERE id = ?', [name.trim(), profilePic || null, req.user.id]);
+  const user = dbGet('SELECT id, name, email, profile_pic FROM users WHERE id = ?', [req.user.id]);
+  res.json({ message: 'Profile updated.', user });
+});
+
+// ── 10. Change password ────────────────────────────────────────────────────────
+app.post('/api/user/change-password', requireAuth, async (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'Password is required.' });
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+
+  const hash = await bcrypt.hash(password, 12);
+  dbRun('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.user.id]);
+  res.json({ message: 'Password changed successfully.' });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  TASK ROUTES
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Get all tasks for user
+app.get('/api/tasks', requireAuth, (req, res) => {
+  const tasks = dbAll('SELECT id, text, done FROM tasks WHERE user_id = ? ORDER BY id ASC', [req.user.id]);
+  res.json({ tasks });
+});
+
+// Add a task
+app.post('/api/tasks', requireAuth, (req, res) => {
+  const { text } = req.body;
+  if (!text || !text.trim()) return res.status(400).json({ error: 'Task text is required.' });
+  dbRun('INSERT INTO tasks (user_id, text, done) VALUES (?, ?, 0)', [req.user.id, text.trim()]);
+  const task = dbGet('SELECT id, text, done FROM tasks WHERE user_id = ? ORDER BY id DESC LIMIT 1', [req.user.id]);
+  res.json({ task });
+});
+
+// Toggle a task
+app.post('/api/tasks/toggle', requireAuth, (req, res) => {
+  const { id, done } = req.body;
+  if (id === undefined || done === undefined) return res.status(400).json({ error: 'Missing fields.' });
+  dbRun('UPDATE tasks SET done = ? WHERE id = ? AND user_id = ?', [done ? 1 : 0, id, req.user.id]);
+  res.json({ message: 'Task updated.' });
+});
+
+// Delete a task
+app.post('/api/tasks/delete', requireAuth, (req, res) => {
+  const { id } = req.body;
+  if (id === undefined) return res.status(400).json({ error: 'Missing task ID.' });
+  dbRun('DELETE FROM tasks WHERE id = ? AND user_id = ?', [id, req.user.id]);
+  res.json({ message: 'Task deleted.' });
+});
+
+// Sync local tasks (bulk save)
+app.post('/api/tasks/sync', requireAuth, (req, res) => {
+  const { tasks } = req.body;
+  if (!Array.isArray(tasks)) return res.status(400).json({ error: 'Tasks array is required.' });
+  for (const t of tasks) {
+    if (t.text && t.text.trim()) {
+      dbRun('INSERT INTO tasks (user_id, text, done) VALUES (?, ?, ?)', [req.user.id, t.text.trim(), t.done ? 1 : 0]);
+    }
+  }
+  res.json({ message: 'Tasks synced successfully.' });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -370,8 +489,8 @@ app.post('/api/communities/create', requireAuth, (req, res) => {
   dbRun('INSERT INTO communities (name, owner_id) VALUES (?, ?)', [name.trim(), req.user.id]);
   const community = dbGet('SELECT * FROM communities WHERE owner_id = ? ORDER BY id DESC LIMIT 1', [req.user.id]);
 
-  // Automatically add creator as member
-  dbRun('INSERT OR IGNORE INTO community_members (community_id, user_id) VALUES (?, ?)', [community.id, req.user.id]);
+  // Automatically add creator as member and admin
+  dbRun('INSERT OR IGNORE INTO community_members (community_id, user_id, is_admin) VALUES (?, ?, 1)', [community.id, req.user.id]);
 
   res.json({ message: 'Community created.', community });
 });
@@ -393,6 +512,10 @@ app.post('/api/communities/invite', requireAuth, async (req, res) => {
   const inviter = dbGet('SELECT name FROM users WHERE id = ?', [req.user.id]);
   const results = [];
 
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const reqBaseUrl = `${protocol}://${host}`;
+
   for (const rawEmail of emails) {
     const email = rawEmail.toLowerCase().trim();
     if (!email) continue;
@@ -404,7 +527,7 @@ app.post('/api/communities/invite', requireAuth, async (req, res) => {
     dbRun('UPDATE community_invites SET used = 1 WHERE community_id = ? AND email = ? AND used = 0', [communityId, email]);
     dbRun('INSERT INTO community_invites (community_id, email, token, expires_at) VALUES (?, ?, ?, ?)', [communityId, email, token, expires]);
 
-    const joinUrl = `${BASE_URL}/join.html?token=${token}`;
+    const joinUrl = `${reqBaseUrl}/join.html?token=${token}`;
     try {
       await sendMail({
         to: email,
@@ -421,6 +544,34 @@ app.post('/api/communities/invite', requireAuth, async (req, res) => {
   res.json({ message: 'Invites processed.', results });
 });
 
+// ── 2b. Get or Create Direct Shareable Invite Link ─────────────────────────────
+app.get('/api/communities/:id/direct-invite', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const community = dbGet('SELECT * FROM communities WHERE id = ?', [communityId]);
+  if (!community) return res.status(404).json({ error: 'Community not found.' });
+
+  // Verify membership
+  const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
+
+  // Find active general invite link (email is "", used is 0, not expired)
+  let invite = dbGet('SELECT token FROM community_invites WHERE community_id = ? AND email = "" AND used = 0 AND datetime(expires_at) > datetime("now") LIMIT 1', [communityId]);
+  
+  if (!invite) {
+    const token = uuid();
+    const expires = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    dbRun('INSERT INTO community_invites (community_id, email, token, expires_at) VALUES (?, "", ?, ?)', [communityId, token, expires]);
+    invite = { token };
+  }
+
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const reqBaseUrl = `${protocol}://${host}`;
+
+  const directLink = `${reqBaseUrl}/join.html?token=${invite.token}`;
+  res.json({ directLink });
+});
+
 // ── 3. Join via token ─────────────────────────────────────────────────────────
 app.get('/api/communities/join', (req, res) => {
   const { token } = req.query;
@@ -432,26 +583,63 @@ app.get('/api/communities/join', (req, res) => {
 
   const community = dbGet('SELECT * FROM communities WHERE id = ?', [invite.community_id]);
 
-  // Check if the invited email has a verified account
-  const user = dbGet('SELECT id, name, email FROM users WHERE email = ? AND verified = 1', [invite.email]);
-  if (!user) {
-    return res.status(403).json({
-      error: 'no_account',
-      message: `You don't have an account on Pitstop. Create one to join "${community.name}".`,
-      communityName: community.name,
-    });
+  let user = null;
+  if (invite.email && invite.email !== '') {
+    // Email-specific invite
+    user = dbGet('SELECT id, name, email FROM users WHERE email = ? AND verified = 1', [invite.email]);
+    if (!user) {
+      return res.status(403).json({
+        error: 'no_account',
+        message: `You don't have an account on Pitstop. Create one to join "${community.name}".`,
+        communityName: community.name,
+      });
+    }
+  } else {
+    // General direct invite link
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies && req.cookies.token;
+    const tokenStr = cookieToken || (authHeader && authHeader.split(' ')[1]);
+    
+    if (!tokenStr) {
+      return res.status(401).json({
+        error: 'not_logged_in',
+        message: `You must log in to join "${community.name}".`,
+        communityName: community.name
+      });
+    }
+    try {
+      const decoded = jwt.verify(tokenStr, JWT_SECRET);
+      user = dbGet('SELECT id, name, email FROM users WHERE id = ? AND verified = 1', [decoded.id]);
+    } catch (err) {
+      return res.status(401).json({
+        error: 'not_logged_in',
+        message: `Session expired. Please log in to join "${community.name}".`,
+        communityName: community.name
+      });
+    }
+    if (!user) {
+      return res.status(401).json({
+        error: 'not_logged_in',
+        message: `User account not found. Please log in again.`,
+        communityName: community.name
+      });
+    }
   }
 
   // Check if already a member
   const alreadyMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [invite.community_id, user.id]);
   if (alreadyMember) {
-    dbRun('UPDATE community_invites SET used = 1 WHERE id = ?', [invite.id]);
+    if (invite.email && invite.email !== '') {
+      dbRun('UPDATE community_invites SET used = 1 WHERE id = ?', [invite.id]);
+    }
     return res.json({ message: 'already_member', communityName: community.name, user: { name: user.name } });
   }
 
   // Join the community
   dbRun('INSERT OR IGNORE INTO community_members (community_id, user_id) VALUES (?, ?)', [invite.community_id, user.id]);
-  dbRun('UPDATE community_invites SET used = 1 WHERE id = ?', [invite.id]);
+  if (invite.email && invite.email !== '') {
+    dbRun('UPDATE community_invites SET used = 1 WHERE id = ?', [invite.id]);
+  }
 
   res.json({ message: 'joined', communityName: community.name, user: { name: user.name } });
 });
@@ -479,6 +667,182 @@ app.get('/api/communities/mine', requireAuth, (req, res) => {
   });
 
   res.json({ communities: result });
+});
+
+// ── 5. Community Leaderboard ──────────────────────────────────────────────────
+app.get('/api/communities/:id/leaderboard', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+
+  // Verify membership
+  const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
+
+  const members = dbAll(`
+    SELECT u.id, u.name, u.email, u.profile_pic,
+           (SELECT COUNT(*) FROM tasks t WHERE t.user_id = u.id) AS total_tasks,
+           (SELECT COUNT(*) FROM tasks t WHERE t.user_id = u.id AND t.done = 1) AS completed_tasks
+    FROM community_members cm
+    INNER JOIN users u ON u.id = cm.user_id
+    WHERE cm.community_id = ?
+  `, [communityId]);
+
+  // Compute percentages and sort
+  const leaderboard = members.map(m => {
+    const total = m.total_tasks;
+    const completed = m.completed_tasks;
+    const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+    return {
+      id: m.id,
+      name: m.name,
+      email: m.email,
+      profile_pic: m.profile_pic,
+      total_tasks: total,
+      completed_tasks: completed,
+      percentage
+    };
+  }).sort((a, b) => b.percentage - a.percentage || b.completed_tasks - a.completed_tasks || a.name.localeCompare(b.name));
+
+  res.json({ leaderboard });
+});
+
+// ── 6. Get members list ────────────────────────────────────────────────────────
+app.get('/api/communities/:id/members', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const isMember = dbGet('SELECT id, is_admin FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
+
+  const members = dbAll(`
+    SELECT u.id, u.name, u.email, u.profile_pic, cm.is_admin
+    FROM community_members cm
+    INNER JOIN users u ON u.id = cm.user_id
+    WHERE cm.community_id = ?
+    ORDER BY cm.is_admin DESC, u.name ASC
+  `, [communityId]);
+
+  res.json({ members, currentUserIsAdmin: !!isMember.is_admin });
+});
+
+// ── 7. Promote member to admin ──────────────────────────────────────────────────
+app.post('/api/communities/:id/promote', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'User ID is required.' });
+
+  // Caller must be an admin
+  const caller = dbGet('SELECT id, is_admin FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!caller || !caller.is_admin) return res.status(403).json({ error: 'Only admins can promote other members.' });
+
+  dbRun('UPDATE community_members SET is_admin = 1 WHERE community_id = ? AND user_id = ?', [communityId, userId]);
+  res.json({ message: 'Member promoted to admin.' });
+});
+
+// ── 8. List polls ──────────────────────────────────────────────────────────────
+app.get('/api/communities/:id/polls', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
+
+  const polls = dbAll('SELECT p.id, p.question, p.created_at, u.name as creator_name FROM polls p INNER JOIN users u ON u.id = p.creator_id WHERE p.community_id = ? ORDER BY p.created_at DESC', [communityId]);
+  
+  const result = polls.map(p => {
+    const options = dbAll('SELECT id, option_text FROM poll_options WHERE poll_id = ?', [p.id]);
+    
+    // For each option, calculate votes
+    const optionsWithVotes = options.map(o => {
+      const votes = dbGet('SELECT COUNT(*) as count FROM poll_votes WHERE option_id = ?', [o.id]);
+      return { ...o, votes: votes.count || 0 };
+    });
+
+    // Check if current user voted and which option
+    const userVote = dbGet('SELECT option_id FROM poll_votes WHERE poll_id = ? AND user_id = ?', [p.id, req.user.id]);
+
+    return {
+      ...p,
+      options: optionsWithVotes,
+      votedOptionId: userVote ? userVote.option_id : null,
+      totalVotes: optionsWithVotes.reduce((sum, opt) => sum + opt.votes, 0)
+    };
+  });
+
+  res.json({ polls: result });
+});
+
+// ── 9. Create a poll ────────────────────────────────────────────────────────────
+app.post('/api/communities/:id/polls', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const { question, options } = req.body;
+  
+  if (!question || !question.trim()) return res.status(400).json({ error: 'Question is required.' });
+  if (!Array.isArray(options) || options.length < 2) return res.status(400).json({ error: 'At least two options are required.' });
+
+  const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
+
+  dbRun('INSERT INTO polls (community_id, creator_id, question) VALUES (?, ?, ?)', [communityId, req.user.id, question.trim()]);
+  const poll = dbGet('SELECT id FROM polls WHERE community_id = ? AND creator_id = ? ORDER BY id DESC LIMIT 1', [communityId, req.user.id]);
+
+  for (const opt of options) {
+    if (opt && opt.trim()) {
+      dbRun('INSERT INTO poll_options (poll_id, option_text) VALUES (?, ?)', [poll.id, opt.trim()]);
+    }
+  }
+
+  res.json({ message: 'Poll created successfully.' });
+});
+
+// ── 10. Vote on a poll ──────────────────────────────────────────────────────────
+app.post('/api/communities/:id/polls/vote', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const { pollId, optionId } = req.body;
+  if (!pollId || !optionId) return res.status(400).json({ error: 'Poll ID and Option ID are required.' });
+
+  const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
+
+  // Delete previous vote for this poll and user
+  dbRun('DELETE FROM poll_votes WHERE poll_id = ? AND user_id = ?', [pollId, req.user.id]);
+  
+  // Insert new vote
+  dbRun('INSERT INTO poll_votes (poll_id, option_id, user_id) VALUES (?, ?, ?)', [pollId, optionId, req.user.id]);
+  
+  res.json({ message: 'Vote recorded.' });
+});
+
+// ── 11. Get chat messages ───────────────────────────────────────────────────────
+app.get('/api/communities/:id/messages', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
+
+  const messages = dbAll(`
+    SELECT m.id, m.text, m.created_at, u.name as user_name, u.email as user_email, u.profile_pic as user_profile_pic
+    FROM messages m
+    INNER JOIN users u ON u.id = m.user_id
+    WHERE m.community_id = ?
+    ORDER BY m.created_at ASC
+    LIMIT 100
+  `, [communityId]);
+
+  res.json({ messages });
+});
+
+// ── 12. Post a chat message ──────────────────────────────────────────────────────
+app.post('/api/communities/:id/messages', requireAuth, (req, res) => {
+  const communityId = req.params.id;
+  const { text } = req.body;
+  if (!text || !text.trim()) return res.status(400).json({ error: 'Message cannot be empty.' });
+
+  const isMember = dbGet('SELECT id FROM community_members WHERE community_id = ? AND user_id = ?', [communityId, req.user.id]);
+  if (!isMember) return res.status(403).json({ error: 'You are not a member of this community.' });
+
+  dbRun('INSERT INTO messages (community_id, user_id, text) VALUES (?, ?, ?)', [communityId, req.user.id, text.trim()]);
+  res.json({ message: 'Message posted.' });
+});
+
+// ─── Error Handling Middleware ────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('Unhandled Error:', err);
+  res.status(500).json({ error: err.message || 'Something went wrong on the server.' });
 });
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────

@@ -657,6 +657,166 @@
     }
     .modal-msg.ok  { color: #28c840; }
     .modal-msg.err { color: #ff5f57; }
+
+    /* Leaderboard Styles */
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .leaderboard-item.self {
+      border-color: rgba(78, 201, 176, 0.35);
+      background: #1a2030;
+    }
+    .leaderboard-rank {
+      font-size: 13px;
+      font-weight: 600;
+      width: 24px;
+      text-align: center;
+      color: #8b949e;
+    }
+    .leaderboard-rank.rank-1 { color: #febc2e; font-size: 16px; }
+    .leaderboard-rank.rank-2 { color: #c0c0c0; }
+    .leaderboard-rank.rank-3 { color: #cd7f32; }
+    
+    .leaderboard-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .leaderboard-name {
+      font-size: 12px;
+      color: #c9d1d9;
+      font-weight: 500;
+    }
+    .leaderboard-item.self .leaderboard-name::after {
+      content: ' (you)';
+      color: #4ec9b0;
+      font-size: 11px;
+    }
+    .leaderboard-stats {
+      font-size: 11px;
+      color: #555c6e;
+    }
+    .leaderboard-progress-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 80px;
+      flex-shrink: 0;
+    }
+    .leaderboard-progress-track {
+      flex: 1;
+      height: 4px;
+      background: #1c2028;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .leaderboard-progress-fill {
+      height: 100%;
+      background: #28c840;
+      border-radius: 99px;
+    }
+    .leaderboard-pct {
+      font-size: 12px;
+      font-weight: 600;
+      color: #28c840;
+      width: 36px;
+      text-align: right;
+    }
+
+    /* ── Light Theme Overrides ── */
+    body.light-theme {
+      background: #f0f2f5;
+    }
+    body.light-theme .window,
+    body.light-theme .modal,
+    body.light-theme .modal-box,
+    body.light-theme .community-panel {
+      background: #ffffff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 32px 80px rgba(0,0,0,0.15);
+    }
+    body.light-theme .titlebar {
+      background: #f6f8fa;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    body.light-theme .titlebar-title {
+      color: #57606a;
+    }
+    body.light-theme .input-field,
+    body.light-theme .modal-input,
+    body.light-theme .email-tags,
+    body.light-theme .otp-digit {
+      background: #f6f8fa;
+      border-color: rgba(0,0,0,0.1);
+      color: #24292f;
+    }
+    body.light-theme .input-field::placeholder,
+    body.light-theme .modal-input::placeholder {
+      color: #8c959f;
+    }
+    body.light-theme .input-field:focus,
+    body.light-theme .modal-input:focus {
+      border-color: rgba(78, 201, 176, 0.6);
+      box-shadow: 0 0 0 3px rgba(78, 201, 176, 0.15);
+    }
+    body.light-theme .task-item,
+    body.light-theme .cp-community-card,
+    body.light-theme .leaderboard-item {
+      background: #fafbfc;
+      border-color: rgba(0,0,0,0.06);
+    }
+    body.light-theme .task-item:hover,
+    body.light-theme .cp-community-card:hover,
+    body.light-theme .leaderboard-item:hover {
+      background: #f3f4f6;
+    }
+    body.light-theme .leaderboard-item.self {
+      background: #eefcf8;
+      border-color: rgba(78, 201, 176, 0.4);
+    }
+    body.light-theme .task-text,
+    body.light-theme .cp-community-card-name,
+    body.light-theme .leaderboard-name {
+      color: #24292f;
+    }
+    body.light-theme .btn-add,
+    body.light-theme .btn-delete {
+      background: #f6f8fa;
+      border-color: rgba(0,0,0,0.1);
+      color: #24292f;
+    }
+    body.light-theme .btn-add:hover {
+      background: #eaeef2;
+    }
+    body.light-theme .btn-delete:hover {
+      background: #ffebe9;
+      border-color: rgba(255,100,100,0.3);
+    }
+    body.light-theme .divider {
+      background: rgba(0,0,0,0.06);
+    }
+    body.light-theme .stat-num.blue {
+      color: #0969da;
+    }
+    body.light-theme .progress-bar-track {
+      background: #eaeef2;
+    }
+    body.light-theme .email-tag {
+      background: #ddf4ff;
+      border-color: rgba(9,105,218,0.2);
+    }
+    body.light-theme #cp-chat-log {
+      background: #fafbfc;
+      border-color: rgba(0,0,0,0.06);
+    }
   </style>
 </head>
 <body>
@@ -668,10 +828,11 @@
     <div class="traffic-lights">
       <div class="dot red" id="dot-red" title="Community" onclick="openCommunityPanel()"></div>
       <div class="dot yellow"></div>
-      <div class="dot green"></div>
+      <div class="dot green" id="dot-green" title="Settings" onclick="openSettingsModal()" style="cursor: pointer;"></div>
     </div>
-    <span class="titlebar-title">~/tasks/index.todo</span>
-    <div class="user-chip">
+    <span class="titlebar-title"><span style="color: #4ec9b0; font-weight: 600; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase;">pitstop</span> · ~/tasks/index.todo</span>
+    <div class="user-chip" style="display: flex; align-items: center; gap: 8px;">
+      <img id="tb-avatar" src="" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.15); display: none;" />
       <span id="tb-username" class="username"></span>
       <button class="btn-logout" onclick="doLogout()">logout</button>
     </div>
@@ -744,15 +905,67 @@
 <div class="community-overlay" id="community-overlay" onclick="closeCommunityPanel()"></div>
 <div class="community-panel" id="community-panel">
   <div class="cp-header">
-    <h2>// community</h2>
+    <h2 id="cp-header-title">// community</h2>
     <button class="cp-close" onclick="closeCommunityPanel()">✕</button>
   </div>
-  <div class="cp-body">
+  
+  <!-- Community List View -->
+  <div class="cp-body" id="cp-main-view">
     <button class="btn-create-community" id="btn-open-create" onclick="openCreateModal()">
       + create a community
     </button>
     <div class="cp-communities-label">your communities</div>
     <div id="cp-community-list"><div class="cp-empty">no communities yet.</div></div>
+  </div>
+
+  <!-- Community Leaderboard Detailed View -->
+  <div class="cp-body" id="cp-detail-view" style="display: none; flex-direction: column; height: calc(100% - 64px);">
+    <div style="flex-shrink: 0;">
+      <button class="btn-ghost" onclick="showCommunityList()" style="margin-bottom: 16px; font-size: 12px; display: inline-block;">← back to communities</button>
+      <h3 id="cp-detail-title" style="font-size: 15px; color: #4ec9b0; margin-bottom: 6px; font-weight: 500;"></h3>
+      <div id="cp-detail-meta" style="font-size: 11px; color: #555c6e; margin-bottom: 16px; line-height: 1.5;"></div>
+      
+      <!-- Community Sub-tabs -->
+      <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 18px;">
+        <button class="tab-btn active" id="cp-tab-leaderboard" onclick="switchCommunityTab('leaderboard')" style="font-size: 11px; padding: 6px 0; flex: 1;">leaderboard</button>
+        <button class="tab-btn" id="cp-tab-chat" onclick="switchCommunityTab('chat')" style="font-size: 11px; padding: 6px 0; flex: 1;">chat</button>
+        <button class="tab-btn" id="cp-tab-polls" onclick="switchCommunityTab('polls')" style="font-size: 11px; padding: 6px 0; flex: 1;">polls</button>
+        <button class="tab-btn" id="cp-tab-members" onclick="switchCommunityTab('members')" style="font-size: 11px; padding: 6px 0; flex: 1;">members</button>
+      </div>
+    </div>
+
+    <!-- Panel Content Containers -->
+    <div style="flex: 1; overflow-y: auto;">
+      <!-- Panel: Leaderboard -->
+      <div class="cp-tab-panel active" id="cp-panel-leaderboard">
+        <div class="cp-communities-label" style="margin-bottom: 12px;">// member leaderboard</div>
+        <div id="cp-leaderboard-list"></div>
+      </div>
+      
+      <!-- Panel: Chat -->
+      <div class="cp-tab-panel" id="cp-panel-chat" style="display: none; height: 100%; flex-direction: column;">
+        <div id="cp-chat-log" style="flex: 1; overflow-y: auto; background: #161b22; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; min-height: 200px; max-height: calc(100vh - 350px);"></div>
+        <div style="display: flex; gap: 8px; flex-shrink: 0;">
+          <input id="cp-chat-input" class="input-field" type="text" placeholder="type a message..." style="font-size: 12px; padding: 8px 12px;" />
+          <button class="btn-primary" onclick="sendChatMessage()" style="width: auto; padding: 8px 16px; border-radius: 8px;">send</button>
+        </div>
+      </div>
+      
+      <!-- Panel: Polls -->
+      <div class="cp-tab-panel" id="cp-panel-polls" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div class="cp-communities-label" style="margin: 0;">// active polls</div>
+          <button class="btn-ghost" onclick="openPollModal()" style="font-size: 11px;">+ create poll</button>
+        </div>
+        <div id="cp-polls-list"></div>
+      </div>
+      
+      <!-- Panel: Members -->
+      <div class="cp-tab-panel" id="cp-panel-members" style="display: none;">
+        <div class="cp-communities-label" style="margin-bottom: 12px;">// community members</div>
+        <div id="cp-members-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -784,6 +997,15 @@
       <input id="invite-email-tags-input" class="email-tags-input" type="email" placeholder="email address..." />
     </div>
     <div class="modal-hint">Invites will be sent by email. The link expires in 48 hours.</div>
+    
+    <div style="margin: 16px 0; padding: 12px; background: #1c2028; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; text-align: center;">
+      <div class="modal-label" style="margin-bottom: 8px;">or share invite link directly</div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input id="direct-invite-link" class="modal-input" style="margin-bottom: 0; flex: 1; font-size: 11px; color: #8b949e; background: #0e1117;" readonly value="generating link..." onclick="this.select()" />
+        <button class="btn-ghost" onclick="copyDirectInviteLink()" style="font-size: 11px; padding: 10px 14px; text-decoration: none; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;">Copy</button>
+      </div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="closeInviteModal()">cancel</button>
       <button class="btn-modal-ok" id="btn-invite-submit" onclick="submitInvites()">send invites →</button>
@@ -792,7 +1014,251 @@
   </div>
 </div>
 
+<!-- ══ Create Poll Modal ════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-poll">
+  <div class="modal-box">
+    <div class="modal-title">// create poll</div>
+    <div class="modal-label">question / topic</div>
+    <input id="poll-question" class="modal-input" type="text" placeholder="e.g. Which design do you prefer?..." maxlength="100" />
+    
+    <div class="modal-label">options</div>
+    <div id="poll-options-inputs" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+      <input class="modal-input" style="margin-bottom:0;" type="text" placeholder="Option 1" maxlength="50" />
+      <input class="modal-input" style="margin-bottom:0;" type="text" placeholder="Option 2" maxlength="50" />
+    </div>
+    <button class="btn-ghost" onclick="addPollOptionField()" style="margin-bottom: 20px; font-size: 11px;">+ add option</button>
+    
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closePollModal()">cancel</button>
+      <button class="btn-modal-ok" id="btn-poll-submit" onclick="submitCreatePoll()">create poll →</button>
+    </div>
+    <div class="modal-msg" id="poll-msg"></div>
+  </div>
+</div>
+
+<!-- ══ Settings Modal ══════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-settings">
+  <div class="modal-box" style="max-width: 440px;">
+    <div class="modal-title">// settings</div>
+    
+    <!-- Profile picture upload section -->
+    <div style="display:flex; flex-direction:column; align-items:center; margin-bottom: 20px; gap: 10px;">
+      <div style="position:relative; width: 72px; height: 72px;">
+        <img id="settings-avatar-preview" src="" style="width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid #4ec9b0; background:#1c2028;" />
+      </div>
+      <input type="file" id="settings-avatar-input" accept="image/*" style="display:none;" onchange="handleSettingsAvatarChange(this)" />
+      <button class="btn-ghost" onclick="document.getElementById('settings-avatar-input').click()" style="font-size:11px; text-decoration:none; border:1px solid rgba(255,255,255,0.15); padding: 4px 10px; border-radius:4px;">Upload Picture</button>
+    </div>
+    
+    <!-- Edit Username -->
+    <div class="field" style="margin-bottom:14px;">
+      <div class="modal-label">your name</div>
+      <input id="settings-name" class="modal-input" type="text" placeholder="Name..." maxlength="40" style="margin-bottom:0;" />
+    </div>
+    
+    <!-- Change Password -->
+    <div style="border: 1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px; margin-bottom:18px;">
+      <div class="modal-title" style="margin-bottom:10px; font-size:11px;">// change password</div>
+      <div class="field" style="margin-bottom:10px;">
+        <div class="modal-label" style="font-size:10px;">new password</div>
+        <input id="settings-password" class="modal-input" type="password" placeholder="min. 8 characters" style="margin-bottom:0; font-size:12px; padding:8px 10px;" />
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <div class="modal-label" style="font-size:10px;">confirm new password</div>
+        <input id="settings-password-confirm" class="modal-input" type="password" placeholder="repeat password" style="margin-bottom:0; font-size:12px; padding:8px 10px;" />
+      </div>
+    </div>
+    
+    <!-- Theme Toggle -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:12px;">
+      <span class="modal-label" style="margin:0;">Theme</span>
+      <div style="display:flex; gap:6px;">
+        <button id="theme-btn-dark" class="btn-primary" onclick="setAppTheme('dark')" style="width:auto; padding:6px 12px; font-size:11px; border-radius:5px;">Dark</button>
+        <button id="theme-btn-light" class="btn-ghost" onclick="setAppTheme('light')" style="width:auto; padding:6px 12px; font-size:11px; border-radius:5px; text-decoration:none; border:1px solid rgba(255,255,255,0.15);">Light</button>
+      </div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeSettingsModal()">cancel</button>
+      <button class="btn-modal-ok" id="btn-settings-save" onclick="saveSettings()">save changes →</button>
+    </div>
+    <div class="modal-msg" id="settings-msg"></div>
+  </div>
+</div>
+
 <script>
+  // Redirect to backend port if accessed via static dev server (e.g. Live Server)
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if (window.location.port && window.location.port !== '3000') {
+      window.location.replace(`http://localhost:3000${window.location.pathname}${window.location.search}${window.location.hash}`);
+    }
+  }
+
+  // ── Theme Management ────────────────────────────────────────────────────────
+  function setAppTheme(theme) {
+    localStorage.setItem('app_theme', theme);
+    const body = document.body;
+    const btnDark = document.getElementById('theme-btn-dark');
+    const btnLight = document.getElementById('theme-btn-light');
+    
+    if (theme === 'light') {
+      body.classList.add('light-theme');
+      if (btnDark && btnLight) {
+        btnDark.className = 'btn-ghost';
+        btnDark.style.textDecoration = 'none';
+        btnDark.style.border = '1px solid rgba(0,0,0,0.1)';
+        btnLight.className = 'btn-primary';
+        btnLight.style.border = '1.5px solid #28c840';
+      }
+    } else {
+      body.classList.remove('light-theme');
+      if (btnDark && btnLight) {
+        btnDark.className = 'btn-primary';
+        btnDark.style.border = '1.5px solid #28c840';
+        btnLight.className = 'btn-ghost';
+        btnLight.style.textDecoration = 'none';
+        btnLight.style.border = '1px solid rgba(255,255,255,0.15)';
+      }
+    }
+  }
+
+  // ── Settings Modal Functions ───────────────────────────────────────────────
+  let selectedSettingsAvatarBase64 = null;
+
+  async function openSettingsModal() {
+    const token = localStorage.getItem('auth_token');
+    document.getElementById('modal-settings').classList.add('open');
+    document.getElementById('settings-msg').textContent = '';
+    document.getElementById('settings-msg').className = 'modal-msg';
+    
+    // Clear passwords fields
+    document.getElementById('settings-password').value = '';
+    document.getElementById('settings-password-confirm').value = '';
+    
+    // Fetch fresh user details
+    try {
+      const res = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const { user } = await res.json();
+      
+      document.getElementById('settings-name').value = user.name;
+      const preview = document.getElementById('settings-avatar-preview');
+      preview.src = user.profile_pic || '';
+      selectedSettingsAvatarBase64 = user.profile_pic;
+      
+      // Update theme button states
+      const savedTheme = localStorage.getItem('app_theme') || 'dark';
+      setAppTheme(savedTheme);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function closeSettingsModal() {
+    document.getElementById('modal-settings').classList.remove('open');
+  }
+
+  function handleSettingsAvatarChange(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64 = e.target.result;
+      selectedSettingsAvatarBase64 = base64;
+      document.getElementById('settings-avatar-preview').src = base64;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveSettings() {
+    const name = document.getElementById('settings-name').value.trim();
+    const password = document.getElementById('settings-password').value;
+    const confirm = document.getElementById('settings-password-confirm').value;
+    const msgEl = document.getElementById('settings-msg');
+    const btn = document.getElementById('btn-settings-save');
+    
+    if (!name) { showMsg(msgEl, 'err', 'Name is required.'); return; }
+    
+    btn.disabled = true;
+    btn.textContent = 'saving...';
+    
+    const token = localStorage.getItem('auth_token');
+    try {
+      // Step 1: Update profile (name, avatar)
+      const pRes = await fetch('/api/user/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, profilePic: selectedSettingsAvatarBase64 }),
+        credentials: 'include'
+      });
+      const pData = await pRes.json();
+      
+      if (!pRes.ok) {
+        showMsg(msgEl, 'err', pData.error || 'Failed to update profile.');
+        btn.disabled = false;
+        btn.textContent = 'save changes →';
+        return;
+      }
+      
+      // Update local storage
+      localStorage.setItem('auth_user', JSON.stringify(pData.user));
+      
+      // Update header UI
+      document.getElementById('user-name').value = pData.user.name;
+      document.getElementById('tb-username').textContent = pData.user.name;
+      
+      const avatarEl = document.getElementById('tb-avatar');
+      if (pData.user.profile_pic) {
+        avatarEl.src = pData.user.profile_pic;
+        avatarEl.style.display = 'block';
+      } else {
+        avatarEl.style.display = 'none';
+      }
+      
+      // Step 2: Change password if filled
+      if (password) {
+        if (password.length < 8) {
+          showMsg(msgEl, 'err', 'Password must be at least 8 characters.');
+          btn.disabled = false;
+          btn.textContent = 'save changes →';
+          return;
+        }
+        if (password !== confirm) {
+          showMsg(msgEl, 'err', 'Passwords do not match.');
+          btn.disabled = false;
+          btn.textContent = 'save changes →';
+          return;
+        }
+        
+        const pwdRes = await fetch('/api/user/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ password }),
+          credentials: 'include'
+        });
+        const pwdData = await pwdRes.json();
+        
+        if (!pwdRes.ok) {
+          showMsg(msgEl, 'err', pwdData.error || 'Failed to change password.');
+          btn.disabled = false;
+          btn.textContent = 'save changes →';
+          return;
+        }
+      }
+      
+      showMsg(msgEl, 'ok', '✓ Settings saved successfully!');
+      setTimeout(closeSettingsModal, 1200);
+    } catch (err) {
+      showMsg(msgEl, 'err', 'Network error.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'save changes →';
+    }
+  }
+
   // ── Auth guard ──────────────────────────────────────────────────────────────
   (async () => {
     const token = localStorage.getItem('auth_token');
@@ -807,11 +1273,42 @@
       // Pre-fill UI
       document.getElementById('user-name').value    = user.name;
       document.getElementById('tb-username').textContent = user.name;
-      // Load this user's tasks from localStorage
+
+      // Load Avatar if any
+      const avatarEl = document.getElementById('tb-avatar');
+      if (user.profile_pic) {
+        avatarEl.src = user.profile_pic;
+        avatarEl.style.display = 'block';
+      } else {
+        avatarEl.style.display = 'none';
+      }
+
+      // Initialize theme
+      const savedTheme = localStorage.getItem('app_theme') || 'dark';
+      setAppTheme(savedTheme);
+      
+      // Sync/migrate local tasks to database if any exist
       const key = `tasks_${user.email}`;
       const saved = localStorage.getItem(key);
-      if (saved) { tasks = JSON.parse(saved); nextId = Math.max(...tasks.map(t => t.id), 0) + 1; }
-      render();
+      if (saved) {
+        try {
+          const localTasks = JSON.parse(saved);
+          if (localTasks && localTasks.length > 0) {
+            await fetch('/api/tasks/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ tasks: localTasks }),
+              credentials: 'include'
+            });
+          }
+        } catch (e) {
+          console.error('Failed to sync legacy tasks:', e);
+        }
+        localStorage.removeItem(key);
+      }
+
+      // Load tasks from backend database
+      await loadTasksBackend();
     } catch {
       localStorage.removeItem('auth_token');
       window.location.href = '/auth.html';
@@ -827,35 +1324,79 @@
 
   // ── Tasks ───────────────────────────────────────────────────────────────────
   let tasks  = [];
-  let nextId = 1;
 
-  function saveToStorage() {
-    const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
-    if (user.email) localStorage.setItem(`tasks_${user.email}`, JSON.stringify(tasks));
+  async function loadTasksBackend() {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/tasks', {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include'
+      });
+      const data = await res.json();
+      tasks = data.tasks || [];
+      render();
+    } catch (e) {
+      console.error('Failed to load tasks from backend:', e);
+    }
   }
 
-  function addTask() {
+  async function addTask() {
     const input = document.getElementById('task-input');
     const text  = input.value.trim();
     if (!text) { input.focus(); return; }
-    tasks.push({ id: nextId++, text, done: false });
-    input.value = '';
-    saveToStorage();
-    render();
+
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        input.value = '';
+        await loadTasksBackend();
+      }
+    } catch (e) {
+      console.error('Failed to add task:', e);
+    }
     input.focus();
   }
 
-  function toggleTask(id) {
+  async function toggleTask(id) {
     const t = tasks.find(t => t.id === id);
-    if (t) t.done = !t.done;
-    saveToStorage();
-    render();
+    if (!t) return;
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/tasks/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, done: !t.done }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await loadTasksBackend();
+      }
+    } catch (e) {
+      console.error('Failed to toggle task:', e);
+    }
   }
 
-  function deleteTask(id) {
-    tasks = tasks.filter(t => t.id !== id);
-    saveToStorage();
-    render();
+  async function deleteTask(id) {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch('/api/tasks/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await loadTasksBackend();
+      }
+    } catch (e) {
+      console.error('Failed to delete task:', e);
+    }
   }
 
   function render() {
@@ -906,11 +1447,412 @@
   function openCommunityPanel() {
     document.getElementById('community-panel').classList.add('open');
     document.getElementById('community-overlay').classList.add('open');
-    loadMyCommunities();
+    showCommunityList();
   }
   function closeCommunityPanel() {
     document.getElementById('community-panel').classList.remove('open');
     document.getElementById('community-overlay').classList.remove('open');
+    stopCommunityPolling();
+  }
+
+  // ── Community Detailed Tabs State ──────────────────────────────────────────
+  let activeCommunityId = null;
+  let activeCommunityName = "";
+  let activeCommunityMeta = "";
+  let activeCommunityTab = "leaderboard";
+  let communityPollInterval = null;
+
+  function stopCommunityPolling() {
+    if (communityPollInterval) {
+      clearInterval(communityPollInterval);
+      communityPollInterval = null;
+    }
+  }
+
+  function switchCommunityTab(tab) {
+    activeCommunityTab = tab;
+    stopCommunityPolling();
+    
+    // Toggle active tab buttons
+    document.querySelectorAll('#cp-detail-view .tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`cp-tab-${tab}`).classList.add('active');
+    
+    // Toggle panels
+    document.querySelectorAll('.cp-tab-panel').forEach(panel => panel.style.display = 'none');
+    
+    const panelEl = document.getElementById(`cp-panel-${tab}`);
+    if (tab === 'chat') {
+      panelEl.style.display = 'flex';
+      loadChatMessages();
+      // Poll chat messages every 3 seconds
+      communityPollInterval = setInterval(loadChatMessages, 3000);
+    } else {
+      panelEl.style.display = 'block';
+      if (tab === 'leaderboard') {
+        renderLeaderboardTab();
+      } else if (tab === 'polls') {
+        loadPolls();
+        // Poll polls every 3 seconds
+        communityPollInterval = setInterval(loadPolls, 3000);
+      } else if (tab === 'members') {
+        loadMembers();
+      }
+    }
+  }
+
+  function showCommunityList() {
+    document.getElementById('cp-header-title').textContent = '// community';
+    document.getElementById('cp-detail-view').style.display = 'none';
+    document.getElementById('cp-main-view').style.display = 'block';
+    stopCommunityPolling();
+    loadMyCommunities();
+  }
+
+  async function openCommunityLeaderboard(communityId, communityName, communityMeta) {
+    activeCommunityId = communityId;
+    activeCommunityName = communityName;
+    activeCommunityMeta = communityMeta;
+    
+    document.getElementById('cp-main-view').style.display = 'none';
+    document.getElementById('cp-detail-view').style.display = 'flex';
+    
+    switchCommunityTab('leaderboard');
+  }
+
+  // ── Chat room functions ──────────────────────────────────────────────────────
+  async function loadChatMessages() {
+    const token = localStorage.getItem('auth_token');
+    const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+    const chatLog = document.getElementById('cp-chat-log');
+    
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/messages`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const messages = data.messages || [];
+      
+      if (!messages.length) {
+        chatLog.innerHTML = '<div class="cp-empty">No messages yet. Send one below!</div>';
+        return;
+      }
+
+      // Check if user is scrolled to bottom before updating
+      const shouldScroll = chatLog.scrollHeight - chatLog.scrollTop <= chatLog.clientHeight + 40;
+      
+      chatLog.innerHTML = messages.map(m => {
+        const isSelf = m.user_email === user.email;
+        const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const avatar = m.user_profile_pic 
+          ? `<img src="${m.user_profile_pic}" style="width:16px; height:16px; border-radius:50%; object-fit:cover;" />` 
+          : `<span style="display:inline-block; width:16px; height:16px; border-radius:50%; background:#242a35; border:1px solid rgba(255,255,255,0.08);"></span>`;
+
+        return `
+          <div style="display:flex; flex-direction:column; align-items: ${isSelf ? 'flex-end' : 'flex-start'}; gap: 3px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              ${avatar}
+              <span style="font-size: 10px; color: ${isSelf ? '#4ec9b0' : '#8b949e'};">${escHtml(m.user_name)}</span>
+            </div>
+            <div style="background: ${isSelf ? '#1a4d2a' : '#1c2028'}; border: 1px solid ${isSelf ? 'rgba(40,200,64,0.2)' : 'rgba(255,255,255,0.05)'}; padding: 8px 12px; border-radius: 8px; max-width: 80%; font-size: 12px; color: #c9d1d9; word-break: break-word;">
+              ${escHtml(m.text)}
+            </div>
+            <span style="font-size: 9px; color: #555c6e;">${time}</span>
+          </div>
+        `;
+      }).join('');
+      
+      if (shouldScroll) {
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+    } catch (err) {
+      console.error('Failed to load chat messages:', err);
+    }
+  }
+
+  async function sendChatMessage() {
+    const input = document.getElementById('cp-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    const token = localStorage.getItem('auth_token');
+    input.value = '';
+    
+    try {
+      await fetch(`/api/communities/${activeCommunityId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text }),
+        credentials: 'include'
+      });
+      await loadChatMessages();
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  }
+
+  // ── Members tab functions ────────────────────────────────────────────────────
+  async function loadMembers() {
+    const token = localStorage.getItem('auth_token');
+    const list = document.getElementById('cp-members-list');
+    list.innerHTML = '<div class="cp-empty">loading members...</div>';
+    
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/members`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const members = data.members || [];
+      const callerIsAdmin = data.currentUserIsAdmin;
+      
+      list.innerHTML = members.map(m => {
+        const roleBadge = m.is_admin 
+          ? `<span class="badge" style="color:#febc2e; border-color:#febc2e; font-size:9px; padding:1px 6px;">admin</span>`
+          : `<span class="badge" style="color:#8b949e; border-color:#3a4150; font-size:9px; padding:1px 6px;">member</span>`;
+          
+        const promoteBtn = (callerIsAdmin && !m.is_admin) 
+          ? `<button class="btn-ghost" onclick="promoteToAdmin(${m.id})" style="font-size:10px; color:#4ec9b0; margin-left:auto; text-decoration:none; border: 1px solid rgba(78,201,176,0.3); border-radius:4px; padding:2px 8px;">make admin</button>`
+          : '';
+          
+        const avatar = m.profile_pic 
+          ? `<img src="${m.profile_pic}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; margin-right:8px;" />` 
+          : `<span style="display:inline-block; width:28px; height:28px; border-radius:50%; background:#242a35; border:1px solid rgba(255,255,255,0.08); margin-right:8px;"></span>`;
+
+        return `
+          <div class="leaderboard-item" style="padding: 10px 14px; display:flex; align-items:center;">
+            ${avatar}
+            <div class="leaderboard-info">
+              <div class="leaderboard-name" style="font-size:12px;">${escHtml(m.name)}</div>
+              <div style="font-size:10px; color:#555c6e;">${escHtml(m.email)}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+              ${roleBadge}
+              ${promoteBtn}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      list.innerHTML = '<div class="cp-empty" style="color: #ff5f57;">Failed to load members list.</div>';
+    }
+  }
+
+  async function promoteToAdmin(userId) {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/promote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await loadMembers();
+      }
+    } catch (err) {
+      console.error('Failed to promote user:', err);
+    }
+  }
+
+  // ── Polls tab functions ──────────────────────────────────────────────────────
+  async function loadPolls() {
+    const token = localStorage.getItem('auth_token');
+    const list = document.getElementById('cp-polls-list');
+    
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/polls`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const polls = data.polls || [];
+      
+      if (!polls.length) {
+        list.innerHTML = '<div class="cp-empty">No active polls. Create one above!</div>';
+        return;
+      }
+      
+      list.innerHTML = polls.map(p => {
+        const userHasVoted = p.votedOptionId !== null;
+        
+        const optionsHtml = p.options.map(o => {
+          const pct = p.totalVotes === 0 ? 0 : Math.round((o.votes / p.totalVotes) * 100);
+          const isVoted = o.id === p.votedOptionId;
+          
+          return `
+            <div onclick="votePoll(${p.id}, ${o.id})" style="position:relative; background:#1c2028; border: 1px solid ${isVoted ? '#28c840' : 'rgba(255,255,255,0.05)'}; padding: 10px 12px; border-radius: 6px; margin-bottom: 6px; cursor: pointer; overflow:hidden; font-size:12px; transition:border-color 0.2s;">
+              <div style="position:absolute; left:0; top:0; bottom:0; width:${pct}%; background:rgba(40,200,64,0.08); transition:width 0.3s;"></div>
+              <div style="position:relative; display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:${isVoted ? '#28c840' : '#c9d1d9'}; font-weight:${isVoted ? '600' : '400'};">
+                  ${isVoted ? '✓ ' : ''}${escHtml(o.option_text)}
+                </span>
+                <span style="font-size:11px; color:#8b949e;">${o.votes} vote${o.votes !== 1 ? 's' : ''} (${pct}%)</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        return `
+          <div style="background:#161b22; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+            <div style="font-size:11px; color:#555c6e; margin-bottom: 4px;">Created by ${escHtml(p.creator_name)}</div>
+            <div style="font-size:13px; font-weight:600; color:#c9d1d9; margin-bottom: 12px;">${escHtml(p.question)}</div>
+            <div>${optionsHtml}</div>
+            <div style="font-size:11px; color:#555c6e; margin-top:8px; text-align:right;">Total votes: ${p.totalVotes}</div>
+          </div>
+        `;
+      }).join('');
+      
+    } catch (err) {
+      list.innerHTML = '<div class="cp-empty" style="color:#ff5f57;">Failed to load polls.</div>';
+    }
+  }
+
+  async function votePoll(pollId, optionId) {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/polls/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ pollId, optionId }),
+        credentials: 'include'
+      });
+      if (res.ok) {
+        await loadPolls();
+      }
+    } catch (err) {
+      console.error('Failed to vote:', err);
+    }
+  }
+
+  function openPollModal() {
+    document.getElementById('modal-poll').classList.add('open');
+    document.getElementById('poll-question').value = '';
+    document.getElementById('poll-msg').textContent = '';
+    document.getElementById('poll-msg').className = 'modal-msg';
+    
+    // Reset options input fields
+    document.getElementById('poll-options-inputs').innerHTML = `
+      <input class="modal-input" style="margin-bottom:0;" type="text" placeholder="Option 1" maxlength="50" />
+      <input class="modal-input" style="margin-bottom:0;" type="text" placeholder="Option 2" maxlength="50" />
+    `;
+    setTimeout(() => document.getElementById('poll-question').focus(), 50);
+  }
+
+  function closePollModal() {
+    document.getElementById('modal-poll').classList.remove('open');
+  }
+
+  function addPollOptionField() {
+    const container = document.getElementById('poll-options-inputs');
+    const count = container.querySelectorAll('input').length;
+    if (count >= 5) {
+      alert("Maximum 5 options allowed.");
+      return;
+    }
+    const input = document.createElement('input');
+    input.className = 'modal-input';
+    input.style.marginBottom = '0';
+    input.type = 'text';
+    input.placeholder = `Option ${count + 1}`;
+    input.maxLength = 50;
+    container.appendChild(input);
+    input.focus();
+  }
+
+  async function submitCreatePoll() {
+    const question = document.getElementById('poll-question').value.trim();
+    const msgEl = document.getElementById('poll-msg');
+    const btn = document.getElementById('btn-poll-submit');
+    
+    const inputs = document.getElementById('poll-options-inputs').querySelectorAll('input');
+    const options = [...inputs].map(i => i.value.trim()).filter(val => val !== '');
+    
+    if (!question) { showMsg(msgEl, 'err', 'Please enter a question.'); return; }
+    if (options.length < 2) { showMsg(msgEl, 'err', 'Add at least 2 non-empty options.'); return; }
+    
+    btn.disabled = true;
+    btn.textContent = 'creating...';
+    
+    const token = localStorage.getItem('auth_token');
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ question, options }),
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showMsg(msgEl, 'ok', '✓ Poll created successfully!');
+        loadPolls();
+        setTimeout(closePollModal, 1200);
+      } else {
+        showMsg(msgEl, 'err', data.error || 'Failed to create poll.');
+      }
+    } catch {
+      showMsg(msgEl, 'err', 'Network error.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'create poll →';
+    }
+  }
+
+  async function renderLeaderboardTab() {
+    const token = localStorage.getItem('auth_token');
+    const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+    
+    document.getElementById('cp-header-title').textContent = `// community / leaderboard`;
+    document.getElementById('cp-detail-title').textContent = activeCommunityName;
+    document.getElementById('cp-detail-meta').textContent = activeCommunityMeta;
+    
+    const list = document.getElementById('cp-leaderboard-list');
+    list.innerHTML = '<div class="cp-empty">loading leaderboard...</div>';
+    
+    try {
+      const res = await fetch(`/api/communities/${activeCommunityId}/leaderboard`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      
+      const leaderboard = data.leaderboard || [];
+      if (!leaderboard.length) {
+        list.innerHTML = '<div class="cp-empty">No members in this community.</div>';
+        return;
+      }
+      
+      list.innerHTML = leaderboard.map((m, index) => {
+        const isSelf = m.email === user.email;
+        const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+        const rankText = index === 0 ? '👑' : `${index + 1}`;
+        
+        const avatar = m.profile_pic 
+          ? `<img src="${m.profile_pic}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; margin-right:8px;" />` 
+          : `<span style="display:inline-block; width:24px; height:24px; border-radius:50%; background:#242a35; border:1px solid rgba(255,255,255,0.08); margin-right:8px;"></span>`;
+
+        return `
+          <div class="leaderboard-item ${isSelf ? 'self' : ''}" style="display:flex; align-items:center;">
+            <div class="leaderboard-rank ${rankClass}">${rankText}</div>
+            ${avatar}
+            <div class="leaderboard-info">
+              <div class="leaderboard-name">${escHtml(m.name)}</div>
+              <div class="leaderboard-stats">${m.completed_tasks}/${m.total_tasks} task${m.total_tasks !== 1 ? 's' : ''} completed</div>
+            </div>
+            <div class="leaderboard-progress-container">
+              <div class="leaderboard-progress-track">
+                <div class="leaderboard-progress-fill" style="width: ${m.percentage}%"></div>
+              </div>
+              <div class="leaderboard-pct">${m.percentage}%</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+    } catch (err) {
+      list.innerHTML = '<div class="cp-empty" style="color: #ff5f57;">Failed to load leaderboard.</div>';
+    }
   }
 
   async function loadMyCommunities() {
@@ -932,12 +1874,15 @@
       return;
     }
     list.innerHTML = communities.map(c => `
-      <div class="cp-community-card">
-        <div class="cp-community-card-name">${escHtml(c.name)}</div>
+      <div class="cp-community-card" style="cursor: pointer;" onclick="openCommunityLeaderboard(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}', '${c.member_count} member${c.member_count !== 1 ? 's' : ''} · ${c.members.map(m => escHtml(m.name)).join(', ').replace(/'/g, "\\'")}')">
+        <div class="cp-community-card-name" style="font-weight: 500;">${escHtml(c.name)}</div>
         <div class="cp-community-card-meta">${c.member_count} member${c.member_count !== 1 ? 's' : ''} · ${
           c.members.map(m => escHtml(m.name)).join(', ')
         }</div>
-        <button class="btn-invite-member" onclick="openInviteModal(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}')">+ invite people</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+          <span style="font-size: 11px; color: #4ec9b0; text-decoration: underline; text-underline-offset: 2px;">View Leaderboard →</span>
+          <button class="btn-invite-member" onclick="event.stopPropagation(); openInviteModal(${c.id}, '${escHtml(c.name).replace(/'/g, "\\'")}')">+ invite people</button>
+        </div>
       </div>
     `).join('');
   }
@@ -1055,7 +2000,7 @@
   // ── Invite Modal (existing community) ──────────────────────────────────────
   let activeInviteCommunityId = null;
 
-  function openInviteModal(communityId, communityName) {
+  async function openInviteModal(communityId, communityName) {
     activeInviteCommunityId = communityId;
     document.getElementById('invite-modal-title').textContent = `// invite to "${communityName}"`;
     document.getElementById('invite-msg').textContent = '';
@@ -1063,7 +2008,44 @@
     document.getElementById('modal-invite').classList.add('open');
     if (!inviteTagHelper) inviteTagHelper = makeTagInput('invite-email-tags-input', 'invite-email-tags-box');
     else inviteTagHelper.clear();
+    
+    const linkInput = document.getElementById('direct-invite-link');
+    linkInput.value = "generating link...";
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`/api/communities/${communityId}/direct-invite`, {
+        credentials: 'include',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.directLink) {
+        linkInput.value = data.directLink;
+      } else {
+        linkInput.value = "Failed to generate link.";
+      }
+    } catch {
+      linkInput.value = "Error generating link.";
+    }
+
     setTimeout(() => document.getElementById('invite-email-tags-input').focus(), 50);
+  }
+
+  function copyDirectInviteLink() {
+    const input = document.getElementById('direct-invite-link');
+    if (!input || input.value.startsWith('generating') || input.value.startsWith('Error') || input.value.startsWith('Failed')) {
+      return;
+    }
+    
+    input.select();
+    input.setSelectionRange(0, 99999);
+    
+    navigator.clipboard.writeText(input.value).then(() => {
+      const msgEl = document.getElementById('invite-msg');
+      showMsg(msgEl, 'ok', '✓ Direct invite link copied to clipboard!');
+    }).catch(() => {
+      alert("Failed to copy link. Please manually copy the text.");
+    });
   }
   function closeInviteModal() {
     document.getElementById('modal-invite').classList.remove('open');
@@ -1110,11 +2092,17 @@
     el.textContent = text;
   }
 
+  // Send message on Enter key inside chat input
+  document.getElementById('cp-chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendChatMessage();
+  });
+
   // Close modals on Escape
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeCreateModal();
       closeInviteModal();
+      closePollModal();
     }
   });
 </script>

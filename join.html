@@ -138,6 +138,18 @@
 </div>
 
 <script>
+  // Redirect if double-clicked from folder
+  if (window.location.protocol === 'file:') {
+    window.location.replace(`http://localhost:3000/join.html${window.location.search}${window.location.hash}`);
+  }
+
+  // Redirect to backend port if accessed via static dev server (e.g. Live Server)
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if (window.location.port && window.location.port !== '3000') {
+      window.location.replace(`http://localhost:3000${window.location.pathname}${window.location.search}${window.location.hash}`);
+    }
+  }
+
   const params = new URLSearchParams(window.location.search);
   const token  = params.get('token');
 
@@ -155,7 +167,16 @@
     }
 
     try {
-      const res  = await fetch(`/api/communities/join?token=${encodeURIComponent(token)}`);
+      const headers = {};
+      const localToken = localStorage.getItem('auth_token');
+      if (localToken) {
+        headers['Authorization'] = `Bearer ${localToken}`;
+      }
+
+      const res  = await fetch(`/api/communities/join?token=${encodeURIComponent(token)}`, {
+        credentials: 'include',
+        headers: headers
+      });
       const data = await res.json();
 
       if (res.ok) {
@@ -175,12 +196,13 @@
           `;
         }
       } else {
-        if (data.error === 'no_account') {
+        if (data.error === 'not_logged_in' || data.error === 'no_account') {
+          const authRedirect = `/auth.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
           body.innerHTML = `
-            <span class="icon">🚫</span>
-            <div class="card-title">You don't have an account</div>
-            <div class="card-sub">You need a Pitstop account to join <span class="community-name">${escHtml(data.communityName)}</span>.<br>Create one — it only takes a minute.</div>
-            <a href="/auth.html" class="btn btn-cyan">create now →</a>
+            <span class="icon">🔒</span>
+            <div class="card-title">Join Community</div>
+            <div class="card-sub">You need a Pitstop account to join <span class="community-name">${escHtml(data.communityName || 'this community')}</span>.<br>Please sign up or log in first.</div>
+            <a href="${authRedirect}" class="btn btn-cyan">log in / sign up →</a>
           `;
         } else if (data.error === 'Invite link has expired.') {
           body.innerHTML = `

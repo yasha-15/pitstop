@@ -365,7 +365,9 @@
         <div class="section-label">// password</div>
         <div class="input-wrap">
           <input id="login-password" class="input-field" type="password" placeholder="your password" />
-          <button class="eye-btn" onclick="togglePwd('login-password', this)">👁</button>
+          <button class="eye-btn" onclick="togglePwd('login-password', this)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
       </div>
 
@@ -465,7 +467,9 @@
         <div class="section-label">// set password</div>
         <div class="input-wrap">
           <input id="signup-password" class="input-field" type="password" placeholder="min. 8 characters" oninput="checkStrength(this.value)" />
-          <button class="eye-btn" onclick="togglePwd('signup-password', this)">👁</button>
+          <button class="eye-btn" onclick="togglePwd('signup-password', this)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
         <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
         <div class="strength-label" id="strength-label"></div>
@@ -475,7 +479,9 @@
         <div class="section-label">// confirm password</div>
         <div class="input-wrap">
           <input id="signup-confirm" class="input-field" type="password" placeholder="repeat your password" />
-          <button class="eye-btn" onclick="togglePwd('signup-confirm', this)">👁</button>
+          <button class="eye-btn" onclick="togglePwd('signup-confirm', this)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
         </div>
       </div>
 
@@ -486,6 +492,13 @@
 </div><!-- /window -->
 
 <script>
+  // Redirect to backend port if accessed via static dev server (e.g. Live Server)
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if (window.location.port && window.location.port !== '3000') {
+      window.location.replace(`http://localhost:3000${window.location.pathname}${window.location.search}${window.location.hash}`);
+    }
+  }
+
   // ── State ──────────────────────────────────────────────────────────────────
   let signupEmail = '';
   let signupName  = '';
@@ -528,10 +541,20 @@
   }
 
   // ── Password toggle ────────────────────────────────────────────────────────
+  const SVGS = {
+    eye: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    eyeOff: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>`
+  };
+
   function togglePwd(inputId, btn) {
     const inp = document.getElementById(inputId);
-    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
-    else { inp.type = 'password'; btn.textContent = '👁'; }
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      btn.innerHTML = SVGS.eyeOff;
+    } else {
+      inp.type = 'password';
+      btn.innerHTML = SVGS.eye;
+    }
   }
 
   // ── Real-time email validation ──────────────────────────────────────────
@@ -593,18 +616,36 @@
 
   // ── API helper ─────────────────────────────────────────────────────────────
   async function api(path, body) {
-    const res = await fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      credentials: 'include',
-    });
-    const text = await res.text();
-    let data = {};
-    try { data = text ? JSON.parse(text) : {}; }
-    catch { throw new Error('Server returned an unexpected response. Please try again.'); }
-    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
-    return data;
+    if (window.location.protocol === 'file:') {
+      throw new Error('Please open this page via http://localhost:3000/auth.html instead of double-clicking the HTML file directly.');
+    }
+    try {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        credentials: 'include',
+      });
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        if (text && text.trim().startsWith('<')) {
+          throw new Error(`Server returned an invalid HTML response (Status: ${res.status}). Make sure the backend server is running and configured correctly.`);
+        }
+        throw new Error(text || `Server returned an unexpected response (Status: ${res.status}).`);
+      }
+      if (!res.ok) {
+        throw new Error(data.error || `Something went wrong (Status: ${res.status}).`);
+      }
+      return data;
+    } catch (err) {
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        throw new Error('Could not connect to the server. Please make sure the backend server is running on port 3000.');
+      }
+      throw err;
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -621,8 +662,10 @@
       const data = await api('/api/auth/login', { email, password });
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('auth_user',  JSON.stringify(data.user));
+      const params = new URLSearchParams(window.location.search);
+      const redirectUrl = params.get('redirect') || '/index.html';
       showAlert('login-alert', `Welcome back, ${data.user.name}! Redirecting...`, 'success');
-      setTimeout(() => window.location.href = '/index.html', 800);
+      setTimeout(() => window.location.href = redirectUrl, 800);
     } catch (err) {
       showAlert('login-alert', err.message);
     } finally {
@@ -720,8 +763,10 @@
       const data = await api('/api/auth/complete-signup', { verifyToken, password });
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('auth_user',  JSON.stringify(data.user));
+      const params = new URLSearchParams(window.location.search);
+      const redirectUrl = params.get('redirect') || '/index.html';
       showAlert('s3-alert', `Account created! Welcome, ${data.user.name}! Redirecting...`, 'success');
-      setTimeout(() => window.location.href = '/index.html', 900);
+      setTimeout(() => window.location.href = redirectUrl, 900);
     } catch (err) {
       showAlert('s3-alert', err.message);
     } finally {
