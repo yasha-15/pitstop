@@ -907,6 +907,100 @@
       background: rgba(255,95,87,0.1);
       border-color: #ff5f57;
     }
+
+    /* ── Timer & Stopwatch Styles ── */
+    #modal-timer .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #555c6e;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 8px 0;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    #modal-timer .tab-btn:hover {
+      color: #c9d1d9;
+    }
+    #modal-timer .tab-btn.active {
+      color: #febc2e;
+      border-bottom-color: #febc2e;
+      font-weight: 600;
+    }
+    body.light-theme #modal-timer .tab-btn.active {
+      color: #b28210;
+      border-bottom-color: #b28210;
+    }
+    
+    .timer-setup-input {
+      width: 100%;
+      background: #1c2028;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 7px;
+      padding: 12px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 500;
+      color: #c9d1d9;
+      outline: none;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .timer-setup-input:focus {
+      border-color: rgba(254, 188, 46, 0.45);
+    }
+    body.light-theme .timer-setup-input {
+      background: #f6f8fa;
+      border-color: rgba(0,0,0,0.1);
+      color: #24292f;
+    }
+    body.light-theme .timer-setup-input:focus {
+      border-color: rgba(178, 130, 16, 0.6);
+    }
+
+    #timer-display {
+      font-size: 46px;
+      font-weight: 600;
+      text-align: center;
+      color: #febc2e;
+      margin: 24px 0;
+      font-variant-numeric: tabular-nums;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 10px rgba(254, 188, 46, 0.15);
+    }
+    body.light-theme #timer-display {
+      color: #b28210;
+      text-shadow: none;
+    }
+
+    #stopwatch-display {
+      font-size: 40px;
+      font-weight: 600;
+      text-align: center;
+      color: #4ec9b0;
+      margin: 24px 0;
+      font-variant-numeric: tabular-nums;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 10px rgba(78, 201, 176, 0.15);
+    }
+    body.light-theme #stopwatch-display {
+      color: #0969da;
+      text-shadow: none;
+    }
+
+    #timer-progress-fill {
+      height: 100%;
+      background: #febc2e;
+      transition: width 0.1s linear;
+      box-shadow: 0 0 8px rgba(254, 188, 46, 0.5);
+    }
+    body.light-theme #timer-progress-fill {
+      background: #b28210;
+      box-shadow: none;
+    }
   </style>
 </head>
 <body>
@@ -917,7 +1011,7 @@
   <div class="titlebar">
     <div class="traffic-lights">
       <div class="dot red" id="dot-red" title="Community" onclick="openCommunityPanel()"></div>
-      <div class="dot yellow"></div>
+      <div class="dot yellow" id="dot-yellow" title="Timer & Stopwatch" onclick="openTimerModal()" style="cursor: pointer;"></div>
       <div class="dot green" id="dot-green" title="Settings" onclick="openSettingsModal()" style="cursor: pointer;"></div>
     </div>
     <span class="titlebar-title"><span style="color: #4ec9b0; font-weight: 600; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase;">pitstop</span> · ~/tasks/index.todo</span>
@@ -1180,6 +1274,71 @@
   </div>
 </div>
 
+<!-- ══ Timer Modal ══════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-timer">
+  <div class="modal-box" style="max-width: 400px;">
+    <div class="modal-title">// timer &amp; stopwatch</div>
+    
+    <!-- Tabs for Timer and Stopwatch -->
+    <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 18px;">
+      <button class="tab-btn active" id="timer-tab-btn" onclick="switchTimerTab('timer')" style="font-size: 11px; padding: 6px 0; flex: 1;">Timer</button>
+      <button class="tab-btn" id="stopwatch-tab-btn" onclick="switchTimerTab('stopwatch')" style="font-size: 11px; padding: 6px 0; flex: 1;">Stopwatch</button>
+    </div>
+
+    <!-- Timer Panel -->
+    <div id="timer-panel">
+      <!-- Input hours and minutes -->
+      <div id="timer-setup" style="display: flex; gap: 10px; margin-bottom: 16px;">
+        <div style="flex: 1;">
+          <div class="modal-label" style="font-size: 10px; text-align: center;">hours</div>
+          <input id="timer-hours" class="timer-setup-input" type="number" min="0" max="23" value="0" />
+        </div>
+        <div style="flex: 1;">
+          <div class="modal-label" style="font-size: 10px; text-align: center;">minutes</div>
+          <input id="timer-minutes" class="timer-setup-input" type="number" min="0" max="59" value="15" />
+        </div>
+        <div style="flex: 1;">
+          <div class="modal-label" style="font-size: 10px; text-align: center;">seconds</div>
+          <input id="timer-seconds" class="timer-setup-input" type="number" min="0" max="59" value="0" />
+        </div>
+      </div>
+
+      <!-- Live Display -->
+      <div id="timer-display" style="display: none;">00:15:00</div>
+      
+      <!-- Progress Bar -->
+      <div id="timer-progress-container" style="width: 100%; height: 6px; background: #1c2028; border-radius: 99px; overflow: hidden; margin-bottom: 24px; display: none;">
+        <div id="timer-progress-fill" style="width: 100%;"></div>
+      </div>
+
+      <!-- Controls -->
+      <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 12px;">
+        <button id="timer-start-btn" class="btn-modal-ok" onclick="startTimer()" style="background: #1a4d2a; border-color: #28c840; color: #28c840; min-width: 80px;">Start</button>
+        <button id="timer-pause-btn" class="btn-modal-ok" onclick="pauseTimer()" style="background: #1a2d3a; border-color: #4ec9b0; color: #4ec9b0; min-width: 80px; display: none;">Pause</button>
+        <button id="timer-reset-btn" class="btn-modal-cancel" onclick="resetTimer()" style="min-width: 80px; display: none;">Reset</button>
+        <button id="timer-delete-btn" class="btn-modal-cancel" onclick="deleteTimer()" style="color: #ff5f57; border-color: rgba(255,95,87,0.3); min-width: 80px; display: none;">Delete</button>
+      </div>
+    </div>
+
+    <!-- Stopwatch Panel -->
+    <div id="stopwatch-panel" style="display: none;">
+      <!-- Live Display -->
+      <div id="stopwatch-display">00:00:00.00</div>
+
+      <!-- Controls -->
+      <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 12px;">
+        <button id="stopwatch-start-btn" class="btn-modal-ok" onclick="startStopwatch()" style="background: #1a4d2a; border-color: #28c840; color: #28c840; min-width: 80px;">Start</button>
+        <button id="stopwatch-pause-btn" class="btn-modal-ok" onclick="pauseStopwatch()" style="background: #1a2d3a; border-color: #4ec9b0; color: #4ec9b0; min-width: 80px; display: none;">Pause</button>
+        <button id="stopwatch-reset-btn" class="btn-modal-cancel" onclick="resetStopwatch()" style="min-width: 80px; display: none;">Reset</button>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px;">
+      <button class="btn-modal-cancel" onclick="closeTimerModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // Redirect to backend port if accessed via static dev server (e.g. Live Server)
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -1214,6 +1373,215 @@
         btnLight.style.border = '1px solid rgba(255,255,255,0.15)';
       }
     }
+  }
+
+  // ── Timer & Stopwatch Functions ───────────────────────────────────────────
+  let timerInterval = null;
+  let timerTotalSeconds = 0;
+  let timerRemainingSeconds = 0;
+  let timerIsRunning = false;
+
+  let stopwatchInterval = null;
+  let stopwatchStartTime = 0;
+  let stopwatchElapsed = 0;
+  let stopwatchIsRunning = false;
+  let activeTimerTab = 'timer';
+
+  function openTimerModal() {
+    document.getElementById('modal-timer').classList.add('open');
+    updateTimerUIState();
+    updateStopwatchUI();
+  }
+
+  function closeTimerModal() {
+    document.getElementById('modal-timer').classList.remove('open');
+  }
+
+  function switchTimerTab(tab) {
+    activeTimerTab = tab;
+    document.getElementById('timer-tab-btn').classList.toggle('active', tab === 'timer');
+    document.getElementById('stopwatch-tab-btn').classList.toggle('active', tab === 'stopwatch');
+    
+    document.getElementById('timer-panel').style.display = tab === 'timer' ? 'block' : 'none';
+    document.getElementById('stopwatch-panel').style.display = tab === 'stopwatch' ? 'block' : 'none';
+  }
+
+  function playFinishingSound() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const playNote = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      const now = ctx.currentTime;
+      playNote(523.25, now, 0.4);        // C5
+      playNote(659.25, now + 0.15, 0.4); // E5
+      playNote(783.99, now + 0.3, 0.5);  // G5
+      playNote(1046.50, now + 0.45, 0.8); // C6
+    } catch (e) {
+      console.error('Failed to play sound via AudioContext:', e);
+    }
+  }
+
+  function startTimer() {
+    if (timerIsRunning) return;
+
+    if (timerRemainingSeconds <= 0) {
+      const hours = parseInt(document.getElementById('timer-hours').value) || 0;
+      const minutes = parseInt(document.getElementById('timer-minutes').value) || 0;
+      const seconds = parseInt(document.getElementById('timer-seconds').value) || 0;
+
+      timerTotalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+      if (timerTotalSeconds <= 0) {
+        alert('Please enter a duration greater than zero.');
+        return;
+      }
+      timerRemainingSeconds = timerTotalSeconds;
+    }
+
+    timerIsRunning = true;
+    updateTimerUIState();
+
+    timerInterval = setInterval(() => {
+      timerRemainingSeconds--;
+      updateTimerDisplay();
+
+      if (timerRemainingSeconds <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerIsRunning = false;
+        playFinishingSound();
+        alert('Timer complete!');
+        resetTimer();
+      }
+    }, 1000);
+  }
+
+  function pauseTimer() {
+    if (!timerIsRunning) return;
+    clearInterval(timerInterval);
+    timerInterval = null;
+    timerIsRunning = false;
+    updateTimerUIState();
+  }
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    timerRemainingSeconds = 0;
+    timerTotalSeconds = 0;
+    timerIsRunning = false;
+    updateTimerUIState();
+  }
+
+  function deleteTimer() {
+    resetTimer();
+  }
+
+  function updateTimerDisplay() {
+    const hrs = Math.floor(timerRemainingSeconds / 3600);
+    const mins = Math.floor((timerRemainingSeconds % 3600) / 60);
+    const secs = timerRemainingSeconds % 60;
+
+    const displayStr = [
+      String(hrs).padStart(2, '0'),
+      String(mins).padStart(2, '0'),
+      String(secs).padStart(2, '0')
+    ].join(':');
+
+    document.getElementById('timer-display').textContent = displayStr;
+
+    const pct = timerTotalSeconds > 0 ? (timerRemainingSeconds / timerTotalSeconds) * 100 : 0;
+    document.getElementById('timer-progress-fill').style.width = pct + '%';
+  }
+
+  function updateTimerUIState() {
+    const isSetupMode = (timerRemainingSeconds <= 0 && !timerIsRunning);
+
+    document.getElementById('timer-setup').style.display = isSetupMode ? 'flex' : 'none';
+    document.getElementById('timer-display').style.display = isSetupMode ? 'none' : 'block';
+    document.getElementById('timer-progress-container').style.display = isSetupMode ? 'none' : 'block';
+
+    document.getElementById('timer-start-btn').style.display = timerIsRunning ? 'none' : 'inline-block';
+    document.getElementById('timer-pause-btn').style.display = timerIsRunning ? 'inline-block' : 'none';
+    document.getElementById('timer-reset-btn').style.display = (!isSetupMode && !timerIsRunning) ? 'inline-block' : 'none';
+    document.getElementById('timer-delete-btn').style.display = !isSetupMode ? 'inline-block' : 'none';
+
+    if (!isSetupMode) {
+      updateTimerDisplay();
+    }
+  }
+
+  // ── Stopwatch Logic ────────────────────────────────────────────────────────
+  function startStopwatch() {
+    if (stopwatchIsRunning) return;
+    stopwatchIsRunning = true;
+    stopwatchStartTime = Date.now() - stopwatchElapsed;
+    
+    stopwatchInterval = setInterval(() => {
+      stopwatchElapsed = Date.now() - stopwatchStartTime;
+      updateStopwatchUI();
+    }, 10);
+    
+    document.getElementById('stopwatch-start-btn').style.display = 'none';
+    document.getElementById('stopwatch-pause-btn').style.display = 'inline-block';
+    document.getElementById('stopwatch-reset-btn').style.display = 'inline-block';
+  }
+
+  function pauseStopwatch() {
+    if (!stopwatchIsRunning) return;
+    clearInterval(stopwatchInterval);
+    stopwatchInterval = null;
+    stopwatchIsRunning = false;
+    
+    document.getElementById('stopwatch-start-btn').style.display = 'inline-block';
+    document.getElementById('stopwatch-pause-btn').style.display = 'none';
+    document.getElementById('stopwatch-reset-btn').style.display = 'inline-block';
+  }
+
+  function resetStopwatch() {
+    clearInterval(stopwatchInterval);
+    stopwatchInterval = null;
+    stopwatchElapsed = 0;
+    stopwatchIsRunning = false;
+    updateStopwatchUI();
+    
+    document.getElementById('stopwatch-start-btn').style.display = 'inline-block';
+    document.getElementById('stopwatch-pause-btn').style.display = 'none';
+    document.getElementById('stopwatch-reset-btn').style.display = 'none';
+  }
+
+  function updateStopwatchUI() {
+    const totalMs = stopwatchElapsed;
+    const hrs = Math.floor(totalMs / 3600000);
+    const mins = Math.floor((totalMs % 3600000) / 60000);
+    const secs = Math.floor((totalMs % 60000) / 1000);
+    const ms = Math.floor((totalMs % 1000) / 10);
+
+    const displayStr = [
+      String(hrs).padStart(2, '0'),
+      String(mins).padStart(2, '0'),
+      String(secs).padStart(2, '0')
+    ].join(':') + '.' + String(ms).padStart(2, '0');
+
+    document.getElementById('stopwatch-display').textContent = displayStr;
   }
 
   // ── Settings Modal Functions ───────────────────────────────────────────────
@@ -2292,6 +2660,8 @@
       closeCreateModal();
       closeInviteModal();
       closePollModal();
+      closeTimerModal();
+      closeSettingsModal();
     }
   });
 </script>
